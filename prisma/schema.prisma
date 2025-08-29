@@ -49,3 +49,24 @@ enum Role {
 model Property {
   id Int @id @default(autoincrement())
 }
+model Transaction {
+  id            String   @id @default(cuid())
+  uuid          String   @unique
+  userid        String
+  roomid        String
+  status        TransactionStatus
+  total         Decimal
+  startDate     DateTime
+  endDate       DateTime
+  paymentProof  String?  // or String? if it's optional
+  invoke_url    String?
+  expiredAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userid], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomid], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
