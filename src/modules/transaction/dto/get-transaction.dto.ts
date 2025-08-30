@@ -1,6 +1,8 @@
-import { IsEnum } from "class-validator";
+import { Decimal } from "@prisma/client/runtime/library";
+import { IsDate, IsDecimal, IsEnum } from "class-validator";
 
 import { IsOptional, IsNumber, IsString, IsArray } from "class-validator";
+import { PaginationQueryParams } from "../../pagination/dto/pagination.dto";
 
 export enum TransactionStatus {
   WAITING_FOR_PAYMENT = "WAITING_FOR_PAYMENT",
@@ -10,35 +12,40 @@ export enum TransactionStatus {
   EXPIRED = "EXPIRED",
 }
 
-export class GetTransactionDTO {
+export class GetTransactionDTO extends PaginationQueryParams {
   @IsOptional()
-  @IsNumber()
-  page?: number = 1;
-
-  @IsOptional()
-  @IsNumber()
-  take?: number = 10;
-
-  //   @IsOptional()
-  //   @IsString()
-  //   search?: string;
+  @IsString()
+  search?: string;
 
   @IsOptional()
   @IsArray()
   @IsEnum(TransactionStatus)
-  status?: TransactionStatus;
+  status?: TransactionStatus =
+    TransactionStatus.WAITING_FOR_PAYMENT ||
+    TransactionStatus.WAITING_FOR_CONFIRMATION ||
+    TransactionStatus.PAID ||
+    TransactionStatus.EXPIRED ||
+    TransactionStatus.REJECT;
 
   @IsOptional()
   @IsNumber()
   userId?: number;
 
   @IsOptional()
-  @IsNumber()
-  eventId?: number;
+  @IsString()
+  roomid?: string;
 
   @IsOptional()
-  @IsString()
-  search?: string;
+  @IsNumber()
+  total?: Number;
+
+  @IsOptional()
+  @IsDate()
+  startDate?: Date;
+
+  @IsOptional()
+  @IsDate()
+  endDate?: Date;
 }
 
 export interface TransactionResponse {

@@ -41,17 +41,17 @@ export class TransactionWorker {
           });
 
           //ambil semua transaction detail
-          const transactionDetails = await tx.transactionDetail.findMany({
-            where: { transactionId: transaction.id },
-          });
+          // const transactionDetails = await tx.transaction.findMany({
+          //   where: { transactionId: transaction.id },
+          // });
 
-          //kembalikan stok produk berdasarkan transaction detail
-          for (const detail of transactionDetails) {
-            await tx.ticket.update({
-              where: { id: detail.ticketId },
-              data: { stock: { increment: detail.qty } },
-            });
-          }
+          // //kembalikan stok produk berdasarkan transaction detail
+          // for (const detail of transactionDetails) {
+          //   await tx.ticket.update({
+          //     where: { id: detail.ticketId },
+          //     data: { stock: { increment: detail.qty } },
+          //   });
+          // }
         });
       }
     }

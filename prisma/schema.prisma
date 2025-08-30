@@ -57,31 +57,34 @@ model Property {
 model Transaction {
   id           Int               @id @default(autoincrement())
   uuid         String            @unique
-  userid       Int
+  userid       Int       
+  user User @relation(fields: [userid], references: [id], onDelete: Cascade)        
+  username     String
   roomid       String
-  status       TransactionStatus @default(PENDING)
-  total        Decimal
+  room Room @relation(fields: [roomid], references: [id], onDelete: Cascade)
+  status       TransactionStatus @default(WAITING_FOR_PAYMENT)
+  total        Int
   startDate    DateTime
   endDate      DateTime
-  paymentProof String? // or String? if it's optional
-  invoke_url   String?
-  expiredAt    DateTime
+  paymentProof String?
+  invoice_url  String?
+  expiredAt    DateTime?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
   // Relations
-  user User @relation(fields: [id], references: [id], onDelete: Cascade)
-  room Room @relation(fields: [roomid], references: [id], onDelete: Cascade)
+
+ 
 
   @@map("transactions")
 }
 
 enum TransactionStatus {
-  PENDING
-  SUCCESS
-  FAILED
+  WAITING_FOR_PAYMENT
+  WAITING_FOR_CONFIRMATION
+  PAID
+  REJECT
   EXPIRED
-  CANCELLED
 }
 
 //temp

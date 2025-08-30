@@ -5,6 +5,7 @@ import { SampleRouter } from "./modules/sample/sample.router";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { AuthRouter } from "./modules/auth/auth.router";
 import { ProfileRouter } from "./modules/profile/profile.router";
+import { TransactionRouter } from "./modules/transaction/transaction.router";
 
 export class App {
   app: Express;
@@ -25,10 +26,12 @@ export class App {
     const sampleRouter = new SampleRouter();
     const authRouter = new AuthRouter();
     const profileRouter = new ProfileRouter();
+    const transactionRouter = new TransactionRouter();
 
     this.app.use("/samples", sampleRouter.getRouter);
     this.app.use("/auth", authRouter.getRouter());
     this.app.use("/profile", profileRouter.getRouter());
+    this.app.use("/transactions", transactionRouter.getRouter());
   }
 
   private handleError() {
