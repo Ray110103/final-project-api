@@ -8,7 +8,7 @@ export enum TransactionStatus {
   WAITING_FOR_PAYMENT = "WAITING_FOR_PAYMENT",
   WAITING_FOR_CONFIRMATION = "WAITING_FOR_CONFIRMATION",
   PAID = "PAID",
-  REJECT = "REJECT",
+  CANCELLED = "CANCELLED",
   EXPIRED = "EXPIRED",
 }
 
@@ -25,7 +25,7 @@ export class GetTransactionDTO extends PaginationQueryParams {
     TransactionStatus.WAITING_FOR_CONFIRMATION ||
     TransactionStatus.PAID ||
     TransactionStatus.EXPIRED ||
-    TransactionStatus.REJECT;
+    TransactionStatus.CANCELLED;
 
   @IsOptional()
   @IsNumber()

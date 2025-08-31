@@ -8,15 +8,16 @@ import { uploadPaymentProofDTO } from "./dto/upload-payment-proof.dto";
 import { TransactionController } from "./transaction.controller";
 import { get } from "http";
 import { GetTransactionDTO } from "./dto/get-transaction.dto";
+import { CancelTransactionDTO } from "./dto/cancel-transaction.dto";
 
 export class TransactionRouter {
   private router: Router;
   private transactionController: TransactionController;
-  private jwtMiddleWare: JwtMiddleware;
+  private jwtMiddleware: JwtMiddleware;
   private uploaderMiddleware: UploaderMiddleware;
   constructor() {
     this.router = Router();
-    this.jwtMiddleWare = new JwtMiddleware();
+    this.jwtMiddleware = new JwtMiddleware();
     this.uploaderMiddleware = new UploaderMiddleware();
     this.transactionController = new TransactionController();
     this.intializeRoutes();
@@ -25,17 +26,32 @@ export class TransactionRouter {
   private intializeRoutes = () => {
     this.router.get(
       "/",
-      this.jwtMiddleWare.verifyToken(process.env.JWT_SECRET!),
-      this.jwtMiddleWare.verifyRole(["TENANT"]), // Requires valid JWT token
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
       this.transactionController.getTransactions
     );
     this.router.get(
       "/tenant",
-      this.jwtMiddleWare.verifyToken(process.env.JWT_SECRET!),
-      this.jwtMiddleWare.verifyRole(["TENANT"]), // Requires valid JWT token
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
       
       this.transactionController.getTransactionsByTenant
     );
+    this.router.patch(
+      "/update",
+       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+       this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
+      validateBody(UpdateTransactionDTO),
+      this.transactionController.updateTransaction
+    );
+    this.router.patch(
+      "/cancel",
+       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+       this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
+      validateBody(CancelTransactionDTO),
+      this.transactionController.cancelTransaction
+    );
+    
   };
 
   getRouter = () => {

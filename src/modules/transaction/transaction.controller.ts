@@ -25,5 +25,15 @@ export class TransactionController {
     const result = await this.transactionService.getTransactions(query,authUserId);
     res.status(200).send(result);
   };
+
+  updateTransaction = async (req: Request, res: Response) => {
+    const result = await this.transactionService.updateTransaction(req.body);
+    res.status(200).send(result);
+  };
+  cancelTransaction = async (req: Request, res: Response) => {
+    const result = await this.transactionService.cancelTransaction(req.body);
+    res.status(200).send(result);
+  };
+
  
 }

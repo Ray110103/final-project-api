@@ -12,48 +12,41 @@ export class TransactionWorker {
       connection,
     });
   }
-
   private handleTransaction = async (job: Job<{ uuid: string }>) => {
     const uuid = job.data.uuid;
 
     const transaction = await this.prisma.transaction.findFirst({
-      where: { uuid: uuid },
+      where: { uuid },
     });
-
     if (!transaction) {
-      throw new ApiError("invalid transaction UUID", 400);
+      throw new ApiError("Transaction not found", 400);
     }
 
     if (transaction.status === "WAITING_FOR_PAYMENT") {
-      await this.prisma.transaction.update({
-        where: { uuid },
-        data: { status: "EXPIRED" },
-      });
-
-      //balikin stock yang di checkout pertama kali
-
-      if (transaction.status === "WAITING_FOR_PAYMENT") {
-        await this.prisma.$transaction(async (tx) => {
-          // ubah status transaksi menjadi Expired
-          await tx.transaction.update({
-            where: { uuid },
-            data: { status: "EXPIRED" },
-          });
-
-          //ambil semua transaction detail
-          // const transactionDetails = await tx.transaction.findMany({
-          //   where: { transactionId: transaction.id },
-          // });
-
-          // //kembalikan stok produk berdasarkan transaction detail
-          // for (const detail of transactionDetails) {
-          //   await tx.ticket.update({
-          //     where: { id: detail.ticketId },
-          //     data: { stock: { increment: detail.qty } },
-          //   });
-          // }
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.update({
+          where: { uuid },
+          data: { status: "EXPIRED" },
         });
-      }
+
+        // ambil semua transaction detail
+        const transactionDetails = await tx.transaction.findMany({
+          where: { uuid: transaction.uuid },
+        });
+        //balikin stock yang di checkout pertama kali
+        for (const detail of transactionDetails) {
+          await tx.room.update({
+            where: { id: detail.roomid },
+            data: {
+              stock: {
+                increment: detail.qty, // Tambahkan kembali jumlah yang dibeli ke stok
+              },
+            },
+          });
+        }
+      });
     }
+    // Optional: Tambahkan log atau notifikasi
+    console.log(`Transaction ${uuid} expired and stock has been restored`);
   };
 }

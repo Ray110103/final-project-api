@@ -24,18 +24,7 @@ export class TransactionService {
     this.cloudinaryService = new CloudinaryService();
   }
 
-  // getBlogBySlug = async (slug: string) => {
-  //   const blog = await this.prisma.blog.findFirst({
-  //     where: { slug },
-  //   });
-
-  //   if (!blog) {
-  //     throw new ApiError("blog not found", 404);
-  //   }
-
-  //   return blog;
-  // };
-
+  // todo get each transaction by tenant
   getTransactionsByTenant = async (
     query: GetTransactionDTO,
     authUserId: number
@@ -63,9 +52,7 @@ export class TransactionService {
     };
   };
 
-  getTransactions = async (query: GetTransactionDTO
-    ,authUserId: number
-  ) => {
+  getTransactions = async (query: GetTransactionDTO, authUserId: number) => {
     const { page, take, sortBy, sortOrder, status } = query;
 
     const whereClause: Prisma.TransactionWhereInput = {};
@@ -87,5 +74,98 @@ export class TransactionService {
       data: transactions,
       meta: { page, take, total },
     };
+  };
+
+  updateTransaction = async (body: UpdateTransactionDTO) => {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: { uuid: body.uuid },
+    });
+
+    if (!transaction) {
+      throw new ApiError("Transaction not found", 400);
+    }
+
+    if (transaction.status !== "WAITING_FOR_CONFIRMATION") {
+      throw new ApiError(
+        "Transaction status must be WAITING_FOR_CONFIRMATION",
+        400
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.transaction.update({
+        where: { uuid: body.uuid },
+        data: {
+          status: body.type === "ACCEPT" ? "PAID" : "WAITING_FOR_PAYMENT",
+        },
+      });
+
+      // make notification if PAID
+
+      // if (body.type === "CANCELLED") {
+      //   // balikin stock kembali semua
+
+      //   const transactionDetails = await tx.transaction.findMany(
+      //     {
+      //       where: { roomid : transaction.roomid},
+      //     }
+      //   );
+
+      //   for (const detail of transactionDetails) {
+      //     await tx.room.update({
+      //       where: { id: detail.roomid },
+      //       // one room only??
+      //       //data: { stock: { increment: detail.qty } },
+      //       data: { stock: { increment: detail.qty  } },
+      //     });
+      //   }
+      // }
+    });
+
+    return { message: "update transaction success" };
+  };
+
+  cancelTransaction = async (body: UpdateTransactionDTO) => {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: { uuid: body.uuid },
+    });
+
+    if (!transaction) {
+      throw new ApiError("Transaction not found", 400);
+    }
+
+    if (transaction.status !== "WAITING_FOR_PAYMENT") {
+      throw new ApiError("Transaction status must be WAITING_FOR_PAYMENT", 400);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.transaction.update({
+        where: { uuid: body.uuid },
+        data: { status: "CANCELLED" },
+      });
+
+      // make notification if  CANCELLED
+
+      // if (body.type === "CANCELLED") {
+      //   // balikin stock kembali semua
+
+      //   const transactionDetails = await tx.transaction.findMany(
+      //     {
+      //       where: { roomid : transaction.roomid},
+      //     }
+      //   );
+
+      //   for (const detail of transactionDetails) {
+      //     await tx.room.update({
+      //       where: { id: detail.roomid },
+      //       // one room only??
+      //       //data: { stock: { increment: detail.qty } },
+      //       data: { stock: { increment: detail.qty  } },
+      //     });
+      //   }
+      // }
+    });
+
+    return { message: "update transaction success" };
   };
 }

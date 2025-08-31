@@ -6,6 +6,7 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import { AuthRouter } from "./modules/auth/auth.router";
 import { ProfileRouter } from "./modules/profile/profile.router";
 import { TransactionRouter } from "./modules/transaction/transaction.router";
+import { initializedWorkers } from "./workers";
 
 export class App {
   app: Express;
@@ -15,6 +16,7 @@ export class App {
     this.configure();
     this.routes();
     this.handleError();
+    initializedWorkers();
   }
 
   private configure() {

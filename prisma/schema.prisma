@@ -56,12 +56,13 @@ model Property {
 
 model Transaction {
   id           Int               @id @default(autoincrement())
-  uuid         String            @unique
-  userid       Int       
-  user User @relation(fields: [userid], references: [id], onDelete: Cascade)        
+  uuid         String            @unique @default(uuid())
+  userid       Int
+  user         User              @relation(fields: [userid], references: [id], onDelete: Cascade)
   username     String
   roomid       String
-  room Room @relation(fields: [roomid], references: [id], onDelete: Cascade)
+  room         Room              @relation(fields: [roomid], references: [id], onDelete: Cascade)
+  qty          Int
   status       TransactionStatus @default(WAITING_FOR_PAYMENT)
   total        Int
   startDate    DateTime
@@ -74,8 +75,6 @@ model Transaction {
 
   // Relations
 
- 
-
   @@map("transactions")
 }
 
@@ -83,14 +82,14 @@ enum TransactionStatus {
   WAITING_FOR_PAYMENT
   WAITING_FOR_CONFIRMATION
   PAID
-  REJECT
+  CANCELLED
   EXPIRED
 }
 
 //temp
 
 model Room {
-  id           String        @id @default(cuid())
+  id           String        @id @default(uuid())
   name         String
   stock        Int
   price        Decimal
