@@ -5,6 +5,9 @@ import { PasswordService } from "../password/password.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ForgotPasswordDTO } from "./dto/forgot-password.dto";
 import { LoginDTO } from "./dto/login.dto";
+import {
+  RegisterTenantDTO
+} from "./dto/register-tenant.dto";
 import { RegisterDTO } from "./dto/register.dto";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 
@@ -63,7 +66,7 @@ export class AuthService {
       throw new ApiError("Invalid Credentials", 400);
     }
 
-    const payload = { id: user.id,role: user.role };
+    const payload = { id: user.id, role: user.role };
 
     const accessToken = this.jwtService.generateToken(
       payload,
@@ -74,6 +77,37 @@ export class AuthService {
     const { password, ...userWithoutPassword } = user;
 
     return { ...userWithoutPassword, accessToken };
+  };
+
+  registerTenant = async (body: RegisterTenantDTO) => {
+    const user = await this.prisma.user.findFirst({
+      where: { email: body.email },
+    });
+
+    if (user) {
+      throw new ApiError("email already exist", 400);
+    }
+
+    const hashedPassword = await this.passwordService.hashPassword(
+      body.password
+    );
+
+    await this.mailService.sendMail(body.email, "Welcome Tenant!", "welcome", {
+      name: body.name,
+      year: new Date().getFullYear(),
+    });
+
+    const newTenant = await this.prisma.user.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        password: hashedPassword,
+        role: "TENANT",
+      },
+      omit: { password: true },
+    });
+
+    return newTenant;
   };
 
   forgotPassword = async (body: ForgotPasswordDTO) => {
