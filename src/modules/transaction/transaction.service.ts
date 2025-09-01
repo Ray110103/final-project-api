@@ -102,24 +102,7 @@ export class TransactionService {
 
       // make notification if PAID
 
-      // if (body.type === "CANCELLED") {
-      //   // balikin stock kembali semua
-
-      //   const transactionDetails = await tx.transaction.findMany(
-      //     {
-      //       where: { roomid : transaction.roomid},
-      //     }
-      //   );
-
-      //   for (const detail of transactionDetails) {
-      //     await tx.room.update({
-      //       where: { id: detail.roomid },
-      //       // one room only??
-      //       //data: { stock: { increment: detail.qty } },
-      //       data: { stock: { increment: detail.qty  } },
-      //     });
-      //   }
-      // }
+     
     });
 
     return { message: "update transaction success" };
