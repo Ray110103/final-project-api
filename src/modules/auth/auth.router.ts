@@ -6,6 +6,7 @@ import { LoginDTO } from "./dto/login.dto";
 import { ForgotPasswordDTO } from "./dto/forgot-password.dto";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 import { JwtMiddleware } from "../../middlewares/jwt.middleware";
+import { RegisterTenantDTO } from "./dto/register-tenant.dto";
 
 export class AuthRouter {
   private authController: AuthController;
@@ -24,6 +25,11 @@ export class AuthRouter {
       "/register",
       validateBody(RegisterDTO),
       this.authController.register
+    );
+    this.router.post(
+      "/register/tenant",
+      validateBody(RegisterTenantDTO),
+      this.authController.registerTenant
     );
     this.router.post(
       "/login",
