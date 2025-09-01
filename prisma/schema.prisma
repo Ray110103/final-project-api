@@ -18,14 +18,15 @@ model Sample {
 }
 
 model User {
-  id             Int      @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   name           String
-  email          String   @unique
+  email          String     @unique
   password       String
-  role           Role     @default(USER)
+  role           Role       @default(USER)
   pictureProfile String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  properties     Property[]
 
   @@map("users")
 }
@@ -47,5 +48,42 @@ enum Role {
 }
 
 model Property {
-  id Int @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String
+  status      Status   @default(ACTIVE)
+  description String
+  city        String
+  address     String?
+  latitude    String
+  longtitude  String
+  pictures    String[]
+  category    String
+  tenantId    Int
+  tenant      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  rooms      Room[]
+
+  @@map("properties")
+}
+
+enum Status {
+  ACTIVE
+  DRAFT
+}
+
+model Room {
+  id         String   @id @default(uuid())
+  name       String
+  stock      Int
+  price      Decimal
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("rooms")
 }
