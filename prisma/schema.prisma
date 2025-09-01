@@ -18,18 +18,18 @@ model Sample {
 }
 
 model User {
-  id             Int        @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   name           String
-  email          String     @unique
+  email          String        @unique
   password       String
-  role           Role       @default(USER)
+  role           Role          @default(USER)
   pictureProfile String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
   properties     Property[]
+  Transaction    Transaction[]
 
   @@map("users")
-  Transaction Transaction[]
 }
 
 model Tenant {
@@ -38,8 +38,7 @@ model Tenant {
   email          String   @unique
   pictureProfile String?
   createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt  
-  
+  updatedAt      DateTime @updatedAt
 
   @@map("tenants")
 }
@@ -67,7 +66,7 @@ model Property {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    Int
-  rooms      Room[]
+  rooms     Room[]
 
   @@map("properties")
 }
@@ -78,19 +77,18 @@ enum Status {
 }
 
 model Room {
-  id         String   @id @default(uuid())
-  name       String
-  stock      Int
-  price      Decimal
-  propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String        @id @default(uuid())
+  name        String
+  stock       Int
+  price       Decimal
+  propertyId  Int
+  property    Property      @relation(fields: [propertyId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  Transaction Transaction[]
 
   @@map("rooms")
-  Transaction Transaction[]
 }
-
 
 model Transaction {
   id           Int               @id @default(autoincrement())
@@ -123,4 +121,3 @@ enum TransactionStatus {
   CANCELLED
   EXPIRED
 }
-  
