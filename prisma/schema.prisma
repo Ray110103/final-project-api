@@ -29,6 +29,7 @@ model User {
   properties     Property[]
 
   @@map("users")
+  Transaction Transaction[]
 }
 
 model Tenant {
@@ -87,6 +88,7 @@ model Room {
   updatedAt  DateTime @updatedAt
 
   @@map("rooms")
+  Transaction Transaction[]
 }
 
 
@@ -121,3 +123,4 @@ enum TransactionStatus {
   CANCELLED
   EXPIRED
 }
+  
