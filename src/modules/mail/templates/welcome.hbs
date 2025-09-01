@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome Email</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #0d6efd;
+    }
+    p {
+      font-size: 16px;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, {{name}}!</h1>
+    <p>
+      We're excited to have you on board. Thank you for registering with us!
+    </p>
+    <p>
+      If you have any questions, feel free to reply to this email.
+    </p>
+    <p class="footer">
+      &copy; {{year}} Your Company. All rights reserved.
+    </p>
+  </div>
+</body>
+</html>
