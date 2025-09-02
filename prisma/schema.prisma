@@ -18,16 +18,15 @@ model Sample {
 }
 
 model User {
-  id             Int           @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   name           String
-  email          String        @unique
+  email          String     @unique
   password       String
-  role           Role          @default(USER)
+  role           Role       @default(USER)
   pictureProfile String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
   properties     Property[]
-  Transaction    Transaction[]
 
   @@map("users")
 }
@@ -66,7 +65,7 @@ model Property {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    Int
-  rooms     Room[]
+  rooms      Room[]
 
   @@map("properties")
 }
@@ -77,47 +76,14 @@ enum Status {
 }
 
 model Room {
-  id          String        @id @default(uuid())
-  name        String
-  stock       Int
-  price       Decimal
-  propertyId  Int
-  property    Property      @relation(fields: [propertyId], references: [id])
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  Transaction Transaction[]
+  id         String   @id @default(uuid())
+  name       String
+  stock      Int
+  price      Decimal
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("rooms")
-}
-
-model Transaction {
-  id           Int               @id @default(autoincrement())
-  uuid         String            @unique @default(uuid())
-  userid       Int
-  user         User              @relation(fields: [userid], references: [id], onDelete: Cascade)
-  username     String
-  roomid       String
-  room         Room              @relation(fields: [roomid], references: [id], onDelete: Cascade)
-  qty          Int
-  status       TransactionStatus @default(WAITING_FOR_PAYMENT)
-  total        Int
-  startDate    DateTime
-  endDate      DateTime
-  paymentProof String?
-  invoice_url  String?
-  expiredAt    DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  // Relations
-
-  @@map("transactions")
-}
-
-enum TransactionStatus {
-  WAITING_FOR_PAYMENT
-  WAITING_FOR_CONFIRMATION
-  PAID
-  CANCELLED
-  EXPIRED
 }
