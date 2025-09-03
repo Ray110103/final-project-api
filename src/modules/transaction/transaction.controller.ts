@@ -11,16 +11,16 @@ export class TransactionController {
   }
 
  getTransactionsByTenant = async (req: Request, res: Response) => {
-  const authUserId = res.locals.user.id;
+ // const authUserId = res.locals.user.id;
    const query = plainToInstance(GetTransactionDTO, req.query);
    const result = await this.transactionService.getTransactionsByTenant(query, 
-    authUserId
+    //authUserId
   );
    res.status(200).send(result);
  } 
  
    getTransactions = async (req: Request, res: Response) => {
-      const authUserId = res.locals.user.id;
+    const authUserId = res.locals.user.id;
     const query = plainToInstance(GetTransactionDTO, req.query);
     const result = await this.transactionService.getTransactions(query,authUserId);
     res.status(200).send(result);

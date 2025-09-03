@@ -27,7 +27,7 @@ export class TransactionService {
   // todo get each transaction by tenant
   getTransactionsByTenant = async (
     query: GetTransactionDTO,
-    authUserId: number
+    //authUserId: number
   ) => {
     const { page, take, sortBy, sortOrder, status } = query;
 
