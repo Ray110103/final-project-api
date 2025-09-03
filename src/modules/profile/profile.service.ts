@@ -62,7 +62,8 @@ export class ProfileService {
 
   changePassword = async (body: ChangePasswordDto, id: number) => {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    if (!user) throw new ApiError("User not found", 404);
+
+    if (!user?.password) throw new ApiError("User not found", 404);
 
     const isValid = await this.passwordService.comparePassword(
       body.oldPassword,
