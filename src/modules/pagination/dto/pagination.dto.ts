@@ -5,7 +5,7 @@ export class PaginationQueryParams {
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => parseInt(value))
-  take: number = 5;
+  take: number = 3;
 
   @IsOptional()
   @IsNumber()

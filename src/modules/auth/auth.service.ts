@@ -84,7 +84,7 @@ export class AuthService {
 
     const isPasswordValid = await this.passwordService.comparePassword(
       body.password,
-      user.password
+      user.password!
     );
 
     if (!isPasswordValid) {

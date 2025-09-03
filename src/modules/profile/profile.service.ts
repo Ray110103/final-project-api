@@ -67,7 +67,7 @@ export class ProfileService {
 
     const isValid = await this.passwordService.comparePassword(
       body.oldPassword,
-      user.password
+      user.password!
     );
     if (!isValid) throw new ApiError("Incorrect current password", 400);
 
