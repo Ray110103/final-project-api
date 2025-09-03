@@ -36,7 +36,7 @@ export class TransactionWorker {
         //balikin stock yang di checkout pertama kali
         for (const detail of transactionDetails) {
           await tx.room.update({
-            where: { id: detail.roomid },
+            where: { id: detail.roomId },
             data: {
               stock: {
                 increment: detail.qty, // Tambahkan kembali jumlah yang dibeli ke stok
