@@ -5,9 +5,7 @@ import { PasswordService } from "../password/password.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ForgotPasswordDTO } from "./dto/forgot-password.dto";
 import { LoginDTO } from "./dto/login.dto";
-import {
-  RegisterTenantDTO
-} from "./dto/register-tenant.dto";
+import { RegisterTenantDTO } from "./dto/register-tenant.dto";
 import { RegisterDTO } from "./dto/register.dto";
 import { ResetPasswordDTO } from "./dto/reset-password.dto";
 
@@ -25,28 +23,51 @@ export class AuthService {
   }
 
   register = async (body: RegisterDTO) => {
-    const user = await this.prisma.user.findFirst({
-      where: { email: body.email },
-    });
+  const user = await this.prisma.user.findFirst({
+    where: { email: body.email },
+  });
 
-    if (user) {
-      throw new ApiError("email already used", 400);
+  if (user) {
+    throw new ApiError("Email already used", 400);
+  }
+
+  // buat user tanpa password & belum verified
+  const newUser = await this.prisma.user.create({
+    data: {
+      name: body.name,
+      email: body.email,
+      isVerified: false,
+    },
+    omit: { password: true },
+  });
+
+  // generate token verifikasi
+  const payload = { id: newUser.id };
+  const token = this.jwtService.generateToken(
+    payload,
+    process.env.JWT_SECRET_VERIFY!,
+    { expiresIn: "1h" }
+  );
+
+  const verificationLink = `http://localhost:3000/register/verify-email/${token}`;
+
+  // kirim email dengan tombol verifikasi
+  await this.mailService.sendMail(
+    body.email,
+    "Verify Your Email - PropertyRent",
+    "verify-email",
+    {
+      userName: newUser.name,
+      verificationLink,
+      currentYear: new Date().getFullYear(),
     }
+  );
 
-    const hashedPassword = await this.passwordService.hashPassword(
-      body.password
-    );
-
-    return await this.prisma.user.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        password: hashedPassword,
-      },
-
-      omit: { password: true },
-    });
+  return {
+    success: true,
+    message: "Registration success, please check your email for verification",
   };
+};
 
   login = async (body: LoginDTO) => {
     const user = await this.prisma.user.findFirst({
@@ -55,6 +76,10 @@ export class AuthService {
 
     if (!user) {
       throw new ApiError("Invalid Credentials", 400);
+    }
+
+    if (!user.isVerified || !user.password) {
+      throw new ApiError("Please verify your email first", 400);
     }
 
     const isPasswordValid = await this.passwordService.comparePassword(
@@ -163,5 +188,70 @@ export class AuthService {
     });
 
     return { message: "Reset Password Success" };
+  };
+
+  verifyEmailAndSetPassword = async (token: string, password: string) => {
+    // verifikasi token
+    const decoded = this.jwtService.verifyToken(
+      token,
+      process.env.JWT_SECRET_VERIFY!
+    ) as { id: number };
+
+    const user = await this.prisma.user.findFirst({
+      where: { id: decoded.id },
+    });
+
+    if (!user) {
+      throw new ApiError("User not found", 400);
+    }
+
+    if (user.isVerified) {
+      throw new ApiError("User already verified", 400);
+    }
+
+    // hash password baru
+    const hashedPassword = await this.passwordService.hashPassword(password);
+
+    // update user -> set password & verified = true
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        isVerified: true,
+      },
+    });
+
+    return {
+      message: "Email verified and password set successfully. Please login.",
+    };
+  };
+
+  resendVerification = async (email: string) => {
+    const user = await this.prisma.user.findFirst({ where: { email } });
+
+    if (!user) throw new ApiError("User not found", 400);
+    if (user.isVerified) throw new ApiError("User already verified", 400);
+
+    const payload = { id: user.id };
+    const token = this.jwtService.generateToken(
+      payload,
+      process.env.JWT_SECRET_VERIFY!,
+      { expiresIn: "1h" }
+    );
+
+    const verificationLink = `http://localhost:3000/verify-email/${token}`;
+
+    await this.mailService.sendMail(
+      email,
+      "Verify Your Email - PropertyRent",
+      "verify-email",
+      {
+        userName: user.name,
+        verificationLink,
+        currentYear: new Date().getFullYear(),
+      }
+    );
+
+    return { message: "Verification email resent" };
   };
 }

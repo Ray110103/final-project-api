@@ -47,6 +47,10 @@ export class AuthRouter {
       validateBody(ResetPasswordDTO),
       this.authController.resetPassword
     );
+    this.router.post(
+      "/verify-email",
+      this.authController.verifyEmailAndSetPassword
+    );
   };
 
   getRouter = () => {
