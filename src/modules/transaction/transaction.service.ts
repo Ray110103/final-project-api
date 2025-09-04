@@ -17,6 +17,7 @@ export class TransactionService {
   private transactionQueue: TransactionQueue;
   private mailService: MailService;
   private cloudinaryService: CloudinaryService;
+  
   constructor() {
     this.prisma = new PrismaService();
     this.transactionQueue = new TransactionQueue();
@@ -24,65 +25,109 @@ export class TransactionService {
     this.cloudinaryService = new CloudinaryService();
   }
 
-  // todo get each transaction by tenant
+  // Get transactions for a specific tenant
   getTransactionsByTenant = async (
     query: GetTransactionDTO,
-    //authUserId: number
+    authUserId: number
   ) => {
     const { page, take, sortBy, sortOrder, status } = query;
-
-    const whereClause: Prisma.TransactionWhereInput = {};
+    
+    // First, get properties owned by this tenant
+    const tenantProperties = await this.prisma.property.findMany({
+      where: { tenantId: authUserId },
+      select: { id: true }
+    });
+    
+    const propertyIds = tenantProperties.map(property => property.id);
+    
+    const whereClause: Prisma.TransactionWhereInput = {
+      room: {
+        propertyId: {
+          in: propertyIds
+        }
+      },
+      ...(status && { status })
+    };
 
     const transactions = await this.prisma.transaction.findMany({
-      include: { user: true },
+      include: { 
+        user: true,
+        room: {
+          include: {
+            property: true
+          }
+        }
+      },
       orderBy: { [sortBy]: sortOrder },
       skip: (page - 1) * take,
       take: take,
-      where: { status },
-    });
-
-    const totalSuccess = await this.prisma.transaction.count({
       where: whereClause,
     });
 
-    const total = await this.prisma.transaction.count();
+    const total = await this.prisma.transaction.count({
+      where: whereClause,
+    });
+
     return {
       data: transactions,
       meta: { page, take, total },
     };
   };
 
+  // Get transactions for a user
   getTransactions = async (query: GetTransactionDTO, authUserId: number) => {
     const { page, take, sortBy, sortOrder, status } = query;
-
-    const whereClause: Prisma.TransactionWhereInput = {};
-
+    const whereClause: Prisma.TransactionWhereInput = {
+      userId: authUserId,
+      ...(status && { status })
+    };
+    
     const transactions = await this.prisma.transaction.findMany({
-      include: { user: true },
+      include: { 
+        user: true,
+        room: {
+          include: {
+            property: true
+          }
+        }
+      },
       orderBy: { [sortBy]: sortOrder },
       skip: (page - 1) * take,
       take: take,
-      where: { status },
-    });
-
-    const totalSuccess = await this.prisma.transaction.count({
       where: whereClause,
     });
 
-    const total = await this.prisma.transaction.count();
+    const total = await this.prisma.transaction.count({
+      where: whereClause,
+    });
+
     return {
       data: transactions,
       meta: { page, take, total },
     };
   };
 
-  updateTransaction = async (body: UpdateTransactionDTO) => {
+  // Update transaction status (accept/reject payment)
+  updateTransaction = async (body: UpdateTransactionDTO, authUserId: number) => {
     const transaction = await this.prisma.transaction.findFirst({
       where: { uuid: body.uuid },
+      include: {
+        user: true,
+        room: {
+          include: {
+            property: true
+          }
+        }
+      }
     });
 
     if (!transaction) {
       throw new ApiError("Transaction not found", 400);
+    }
+    
+    // Verify tenant owns this property
+    if (transaction.room.property.tenantId !== authUserId) {
+      throw new ApiError("You are not authorized to update this transaction", 403);
     }
 
     if (transaction.status !== "WAITING_FOR_CONFIRMATION") {
@@ -93,28 +138,71 @@ export class TransactionService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.transaction.update({
+      const updatedTransaction = await tx.transaction.update({
         where: { uuid: body.uuid },
         data: {
           status: body.type === "ACCEPT" ? "PAID" : "WAITING_FOR_PAYMENT",
         },
+        include: {
+          user: true,
+          room: {
+            include: {
+              property: true
+            }
+          }
+        }
       });
 
-      // make notification if PAID
+      // Send email notification if PAID
+      if (updatedTransaction.status === "PAID") {
+        // Prepare email context with transaction details and property rules
+        const context = {
+          userName: updatedTransaction.user.name,
+          transaction: updatedTransaction,
+          propertyName: updatedTransaction.room.property.title,
+          roomName: updatedTransaction.room.name,
+          startDate: updatedTransaction.startDate,
+          endDate: updatedTransaction.endDate,
+          total: updatedTransaction.total,
+          propertyRules: updatedTransaction.room.property.description || "No specific rules provided",
+          checkInInstructions: "Please check in at the reception with your ID and booking confirmation.",
+          // Add any other relevant details
+        };
 
-     
+        // Send payment confirmation email
+        await this.mailService.sendMail(
+          updatedTransaction.user.email,
+          "Payment Confirmed - Booking Details",
+          "payment-confirmation",
+          context
+        );
+      }
     });
 
     return { message: "update transaction success" };
   };
 
-  cancelTransaction = async (body: UpdateTransactionDTO) => {
+  // Cancel transaction
+  cancelTransaction = async (body: UpdateTransactionDTO, authUserId: number) => {
     const transaction = await this.prisma.transaction.findFirst({
       where: { uuid: body.uuid },
+      include: {
+        user: true,
+        room: {
+          include: {
+            property: true
+          }
+        }
+      }
     });
 
     if (!transaction) {
       throw new ApiError("Transaction not found", 400);
+    }
+    
+    // Verify tenant owns this property
+    if (transaction.room.property.tenantId !== authUserId) {
+      throw new ApiError("You are not authorized to cancel this transaction", 403);
     }
 
     if (transaction.status !== "WAITING_FOR_PAYMENT") {
@@ -122,33 +210,42 @@ export class TransactionService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.transaction.update({
+      const updatedTransaction = await tx.transaction.update({
         where: { uuid: body.uuid },
         data: { status: "CANCELLED" },
+        include: {
+          user: true,
+          room: {
+            include: {
+              property: true
+            }
+          }
+        }
       });
 
-      // make notification if  CANCELLED
+      // Send cancellation email notification
+      const context = {
+        userName: updatedTransaction.user.name,
+        transaction: updatedTransaction,
+        propertyName: updatedTransaction.room.property.title,
+        roomName: updatedTransaction.room.name,
+        // Add any other relevant details
+      };
 
-      // if (body.type === "CANCELLED") {
-      //   // balikin stock kembali semua
+      await this.mailService.sendMail(
+        updatedTransaction.user.email,
+        "Booking Cancelled",
+        "booking-cancelled",
+        context
+      );
 
-      //   const transactionDetails = await tx.transaction.findMany(
-      //     {
-      //       where: { roomid : transaction.roomid},
-      //     }
-      //   );
-
-      //   for (const detail of transactionDetails) {
-      //     await tx.room.update({
-      //       where: { id: detail.roomid },
-      //       // one room only??
-      //       //data: { stock: { increment: detail.qty } },
-      //       data: { stock: { increment: detail.qty  } },
-      //     });
-      //   }
-      // }
+      // Restore room stock
+      await tx.room.update({
+        where: { id: updatedTransaction.roomId },
+        data: { stock: { increment: updatedTransaction.qty } },
+      });
     });
 
-    return { message: "update transaction success" };
+    return { message: "cancel transaction success" };
   };
 }
