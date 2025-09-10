@@ -1,3 +1,4 @@
+// /Transaction/transaction.controller.ts
 import { Request, Response } from "express";
 import { TransactionService } from "./transaction.service";
 import { ApiError } from "../../utils/api-error";
@@ -6,6 +7,7 @@ import { plainToInstance } from "class-transformer";
 import { CancelTransactionDTO } from "./dto/cancel-transaction.dto";
 import { uploadPaymentProofDTO } from "./dto/upload-payment-proof.dto";
 import { CreateTransactionDTO } from "./dto/create-transaction.dto";
+import { ConfirmPaymentDTO } from "./dto/confirm-payment.dto";
 
 export class TransactionController {
   private transactionService: TransactionService;
@@ -13,16 +15,9 @@ export class TransactionController {
     this.transactionService = new TransactionService();
   }
 
- getTransactionsByTenant = async (req: Request, res: Response) => {
- // const authUserId = res.locals.user.id;
-   const query = plainToInstance(GetTransactionDTO, req.query);
-   const result = await this.transactionService.getTransactionsByTenant(query, 1312
-    //authUserId
-  );
-   res.status(200).send(result);
- } 
- 
-   getTransactions = async (req: Request, res: Response) => {
+  // Admin
+
+    getTransactions = async (req: Request, res: Response) => {
     //const authUserId = res.locals.user.id;
     const query = plainToInstance(GetTransactionDTO, req.query);
     const result = await this.transactionService.getTransactions(query,
@@ -31,17 +26,7 @@ export class TransactionController {
     res.status(200).send(result);
   };
 
-  updateTransaction = async (req: Request, res: Response) => {
-    //const authUserId = res.locals.user.id;
-    const result = await this.transactionService.updateTransaction(req.body,1234);
-    res.status(200).send(result);
-  };
-  cancelTransaction = async (req: Request, res: Response) => {
-    //const authUserId = res.locals.user.id;
-    const result = await this.transactionService.cancelTransaction(req.body,1234);
-    res.status(200).send(result);
-  };
-
+  // User endpoints
   createTransaction = async (req: Request, res: Response) => {
     const authUserId = res.locals.user.id;
     const body = plainToInstance(CreateTransactionDTO, req.body);
@@ -71,5 +56,25 @@ export class TransactionController {
     res.status(200).send(result);
   };
 
- 
+  // Tenant endpoints
+  getTransactionsByTenant = async (req: Request, res: Response) => {
+    const authUserId = res.locals.user.id;
+    const query = plainToInstance(GetTransactionDTO, req.query);
+    const result = await this.transactionService.getTransactionsByTenant(query, authUserId);
+    res.status(200).send(result);
+  };
+  
+  confirmPayment = async (req: Request, res: Response) => {
+    const authUserId = res.locals.user.id;
+    const body = plainToInstance(ConfirmPaymentDTO, req.body);
+    const result = await this.transactionService.confirmPayment(body, authUserId);
+    res.status(200).send(result);
+  };
+  
+  cancelTransactionByTenant = async (req: Request, res: Response) => {
+    const authUserId = res.locals.user.id;
+    const body = plainToInstance(CancelTransactionDTO, req.body);
+    const result = await this.transactionService.cancelTransactionByTenant(body, authUserId);
+    res.status(200).send(result);
+  };
 }

@@ -33,6 +33,7 @@ model User {
   properties  Property[]
 
   @@map("users")
+  Review Review[]
 }
 
 model Tenant {
@@ -44,6 +45,7 @@ model Tenant {
   updatedAt      DateTime @updatedAt
 
   @@map("tenants")
+  Reply Reply[]
 }
 
 enum Role {
@@ -76,6 +78,7 @@ model Property {
   facilities PropertyFacility[]
 
   @@map("properties")
+  Review Review[]
 }
 
 enum Status {
@@ -182,11 +185,11 @@ model Transaction {
   expiredAt    DateTime?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
-
-  // Relations
-
+  paymentMethod PaymentMethod
+  review       Review?
   @@map("transactions")
 }
+
 
 enum TransactionStatus {
   WAITING_FOR_PAYMENT
@@ -194,4 +197,37 @@ enum TransactionStatus {
   PAID
   CANCELLED
   EXPIRED
+}
+
+enum PaymentMethod {
+  MANUAL_TRANSFER
+  PAYMENT_GATEWAY
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  comment    String
+  rating     Int      // 1-5 rating
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  transactionId Int   @unique
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  replies    Reply[]
+  @@map("reviews")
+}
+
+model Reply {
+  id        Int      @id @default(autoincrement())
+  comment   String
+  reviewId  Int
+  review    Review   @relation(fields: [reviewId], references: [id])
+  tenantId  Int
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("replies")
 }

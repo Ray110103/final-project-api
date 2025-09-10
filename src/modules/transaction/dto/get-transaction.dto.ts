@@ -35,6 +35,10 @@ export class GetTransactionDTO extends PaginationQueryParams {
   @IsString()
   roomid?: string;
 
+   @IsOptional()
+  @IsString()
+  room?: string;
+
   @IsOptional()
   @IsNumber()
   total?: Number;
