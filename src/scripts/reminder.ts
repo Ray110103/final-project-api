@@ -14,12 +14,14 @@ export class CronService {
 
   private initCronJobs() {
     // Run every day at 8 AM
+    console.log('Cron job started at 8 AM');
     cron.schedule('0 8 * * *', async () => {
       await this.sendCheckinReminders();
     });
   }
 
   private async sendCheckinReminders() {
+    console.log('Sending check-in reminders...');
     try {
       // Get tomorrow's date
       const tomorrow = new Date();
