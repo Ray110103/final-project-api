@@ -2,6 +2,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ApiError } from "../../utils/api-error";
 import { CreateRoomsDTO } from "./dto/create-room.dto";
 import { GetRoomsDTO } from "./dto/get-room.dto";
+import { Prisma } from "@prisma/client";
 
 export class RoomService {
   private prisma: PrismaService;
@@ -10,6 +11,7 @@ export class RoomService {
     this.prisma = new PrismaService();
   }
 
+  // ✅ GET ROOMS
   getRooms = async (query: GetRoomsDTO) => {
     const {
       take = 10,
@@ -22,8 +24,24 @@ export class RoomService {
 
     const whereClause: any = {};
 
+    // If property is provided, validate it exists and get its ID
     if (property) {
-      whereClause.propertyId = Number(property);
+      const isNumeric = !isNaN(Number(property));
+
+      if (isNumeric) {
+        whereClause.propertyId = Number(property);
+      } else {
+        const propertyData = await this.prisma.property.findFirst({
+          where: { slug: property },
+          select: { id: true },
+        });
+
+        if (!propertyData) {
+          throw new ApiError("Property not found", 404);
+        }
+
+        whereClause.propertyId = propertyData.id;
+      }
     }
 
     if (name) {
@@ -50,6 +68,7 @@ export class RoomService {
             createdAt: true,
             updatedAt: true,
             tenantId: true,
+            tenant: true,
           },
         },
       },
@@ -63,36 +82,57 @@ export class RoomService {
     };
   };
 
+  // ✅ CREATE ROOM
   createRoom = async (body: CreateRoomsDTO, userId: number) => {
-    const propertyId = Number(body.property);
-    const price = Number(body.price);
-    const limit = Number(body.limit);
+  const price = parseInt(body.price as any, 10);
+  const limit = parseInt(body.limit as any, 10);
 
-    if (isNaN(propertyId) || isNaN(price) || isNaN(limit)) {
-      throw new ApiError("Invalid propertyId, price, or stock format", 400);
-    }
+  if (isNaN(price) || isNaN(limit)) {
+    throw new ApiError("Invalid price or limit format", 400);
+  }
 
-    // Validate property ownership
-    const property = await this.prisma.property.findFirst({
-      where: { id: propertyId, tenantId: userId },
-    });
+  // Accept either numeric id or slug in body.property
+  const maybeId = Number(body.property);
+  let property;
 
-    if (!property) {
-      throw new ApiError("Property not found or you do not have access", 404);
-    }
-
-    const room = await this.prisma.room.create({
-      data: {
-        name: body.name,
-        stock: limit,
-        price,
-        propertyId,
+  if (!isNaN(maybeId)) {
+    property = await this.prisma.property.findFirst({
+      where: {
+        id: maybeId,
+        OR: [{ tenantId: userId }],
       },
     });
+  } else {
+    property = await this.prisma.property.findFirst({
+      where: {
+        slug: body.property,
+        OR: [{ tenantId: userId }],
+      },
+    });
+  }
 
-    return {
-      message: "Room created successfully",
-      data: room,
-    };
+  if (!property) {
+    throw new ApiError("Property not found or you do not have access", 404);
+  }
+
+  const room = await this.prisma.room.create({
+    data: {
+      name: body.name,
+      stock: limit,
+      price, // ✅ langsung number (Int)
+      description: body.description,
+      propertyId: property.id,
+    },
+    include: {
+      property: {
+        select: { id: true, title: true, slug: true },
+      },
+    },
+  });
+
+  return {
+    message: "Room created successfully",
+    data: room,
   };
+};
 }

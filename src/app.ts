@@ -7,7 +7,6 @@ import { ProfileRouter } from "./modules/profile/profile.router";
 import { PropertyRouter } from "./modules/property/property.router";
 import { RoomRouter } from "./modules/room/room.router";
 import { SampleRouter } from "./modules/sample/sample.router";
-import { initializedWorkers } from "./workers";
 
 export class App {
   app: Express;
@@ -17,7 +16,6 @@ export class App {
     this.configure();
     this.routes();
     this.handleError();
-    initializedWorkers();
   }
 
   private configure() {

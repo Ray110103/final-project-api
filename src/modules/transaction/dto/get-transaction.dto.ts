@@ -1,7 +1,7 @@
 import { Decimal } from "@prisma/client/runtime/library";
 import { IsDate, IsDecimal, IsEnum } from "class-validator";
 
-import { IsOptional, IsNumber, IsString, IsArray } from "class-validator";
+import { IsOptional, IsNumber, IsString, IsArray, IsDateString } from "class-validator";
 import { PaginationQueryParams } from "../../pagination/dto/pagination.dto";
 
 export enum TransactionStatus {
@@ -46,6 +46,14 @@ export class GetTransactionDTO extends PaginationQueryParams {
   @IsOptional()
   @IsDate()
   endDate?: Date;
+
+   @IsOptional()
+  @IsString()
+  orderNumber?: string; // for searching by transaction UUID
+
+  @IsOptional()
+  @IsDateString()
+  date?: string; // for filtering by transaction date
 }
 
 export interface TransactionResponse {

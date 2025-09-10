@@ -46,24 +46,35 @@ export class PropertyService {
   };
 
   getPropertyBySlug = async (slug: string) => {
-    const property = await this.prisma.property.findFirst({
-      where: { slug, deletedAt: null },
-      include: {
-        rooms: true,
-        tenant: {
-          select: {
-            name: true,
-            pictureProfile: true,
-          },
+  const property = await this.prisma.property.findFirst({
+    where: { slug, deletedAt: null },
+    include: {
+      rooms: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          stock: true,
+          description: true,
+          createdAt: true,
         },
       },
-    });
+      tenant: {
+        select: {
+          id: true,
+          name: true,
+          pictureProfile: true,
+        },
+      },
+    },
+  });
 
-    if (!property) {
-      throw new ApiError("Property not found", 404);
-    }
-    return property;
-  };
+  if (!property) {
+    throw new ApiError("Property not found", 404);
+  }
+
+  return property;
+};
 
   createProperty = async (
     body: CreatePropertyDTO,
@@ -81,21 +92,21 @@ export class PropertyService {
     const slug = generateSlug(body.title);
     const { secure_url } = await this.cloudinaryService.upload(thumbnail);
 
-    // await this.prisma.property.create({
-    //   data: {
-    //     title: body.title,
-    //     description: body.description,
-    //     category: body.category,
-    //     location: body.location,
-    //     city: body.city,
-    //     address: body.address,
-    //     latitude: body.latitude,
-    //     longtitude: body.longtitude,
-    //     thumbnail: secure_url,
-    //     tenantId: authUserId,
-    //     slug,
-    //   },
-    // });
+    await this.prisma.property.create({
+      data: {
+        title: body.title,
+        description: body.description,
+        category: body.category,
+        location: body.location,
+        city: body.city,
+        address: body.address,
+        latitude: body.latitude,
+        longtitude: body.longtitude,
+        thumbnail: secure_url,
+        tenantId: authUserId,
+        slug,
+      },
+    });
 
     return {message: "Create Property Success"};
   };

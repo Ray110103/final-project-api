@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Confirmation</title>
+</head>
+<body>
+    <h1>Payment Confirmed!</h1>
+    <p>Dear {{userName}},</p>
+    <p>Your payment for the following booking has been confirmed:</p>
+    
+    <h2>Booking Details</h2>
+    <ul>
+        <li>Property: {{propertyName}}</li>
+        <li>Room: {{roomName}}</li>
+        <li>Check-in Date: {{startDate}}</li>
+        <li>Check-out Date: {{endDate}}</li>
+        <li>Total Amount: {{total}}</li>
+    </ul>
+    
+    <h2>Property Rules & Instructions</h2>
+    <p>{{propertyRules}}</p>
+    <p>{{checkInInstructions}}</p>
+    
+    <p>Thank you for your booking!</p>
+</body>
+</html>

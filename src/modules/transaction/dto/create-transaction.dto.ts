@@ -1,22 +1,31 @@
 // create-transaction.dto.ts
-import { IsArray, ValidateNested, IsInt, Min } from "class-validator";
-import { Type } from "class-transformer";
+import { IsNotEmpty, IsNumber, IsDateString, IsEnum } from 'class-validator';
 
-// DTO untuk satu item transaksi
-export class TransactionItemDTO {
-  @IsInt()
-  @Min(1)
-  ticketId!: number;
-
-  @IsInt()
-  @Min(1)
-  qty!: number;
+export enum PaymentMethod {
+  MANUAL_TRANSFER = 'MANUAL_TRANSFER',
+  PAYMENT_GATEWAY = 'PAYMENT_GATEWAY'
 }
+
 
 // DTO utama untuk transaksi
 export class CreateTransactionDTO {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => TransactionItemDTO)
-  payload!: TransactionItemDTO[];
+  @IsNotEmpty()
+  @IsNumber()
+  roomId!: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  qty!: number;
+
+  @IsNotEmpty()
+  @IsDateString()
+  startDate!: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  endDate!: string;
+
+  @IsNotEmpty()
+  @IsEnum(PaymentMethod)
+  paymentMethod!: PaymentMethod;
 }

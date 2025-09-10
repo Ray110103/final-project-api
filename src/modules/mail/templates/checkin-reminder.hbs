@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check-in Reminder</title>
+</head>
+<body>
+    <h1>Check-in Reminder</h1>
+    <p>Dear {{userName}},</p>
+    <p>This is a friendly reminder that your check-in is tomorrow:</p>
+    
+    <h2>Booking Details</h2>
+    <ul>
+        <li>Property: {{propertyName}}</li>
+        <li>Room: {{roomName}}</li>
+        <li>Address: {{propertyAddress}}</li>
+        <li>Check-in Date: {{startDate}}</li>
+        <li>Check-out Date: {{endDate}}</li>
+        <li>Check-in Time: {{checkInTime}}</li>
+        <li>Check-out Time: {{checkOutTime}}</li>
+    </ul>
+    
+    <p>Please remember to bring a valid ID and your booking confirmation.</p>
+    <p>If you have any questions, please contact us at: {{contactInfo}}</p>
+    
+    <p>We look forward to welcoming you!</p>
+</body>
+</html>

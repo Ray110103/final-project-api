@@ -24,34 +24,47 @@ export class TransactionRouter {
   }
 
   private intializeRoutes = () => {
-    // this.router.get(
-    //   "/",
-    //   this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-    //   this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
-    //   this.transactionController.getTransactions
-    // );
     this.router.get(
       "/",
+      //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
+      this.transactionController.getTransactions
+    );
+    this.router.get(
+      "/tenant",
       //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
       
       this.transactionController.getTransactionsByTenant
     );
-    this.router.patch(
-      "/update",
-       //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-       //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
-      validateBody(UpdateTransactionDTO),
-      this.transactionController.updateTransaction
-    );
-    this.router.patch(
-      "/cancel",
-       //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-       //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
-      validateBody(CancelTransactionDTO),
-      this.transactionController.cancelTransaction
-    );
-    
+
+    // Create new transaction
+  this.router.post(
+    "/",
+    this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+    validateBody(CreateTransactionDTO),
+    this.transactionController.createTransaction
+  );
+  
+  // Upload payment proof
+  this.router.patch(
+    "/upload-proof",
+    this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+    this.uploaderMiddleware.upload().single("paymentProof"),
+    this.uploaderMiddleware.fileFilter(["image/jpeg", "image/png"]),
+     // 1MB
+    validateBody(uploadPaymentProofDTO),
+    this.transactionController.uploadPaymentProof
+  );
+  
+  // Cancel transaction (user side)
+  this.router.patch(
+    "/cancel",
+    this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+    validateBody(CancelTransactionDTO),
+    this.transactionController.cancelTransactionByUser
+  );
+
   };
 
   getRouter = () => {
