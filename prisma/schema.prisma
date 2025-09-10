@@ -195,8 +195,3 @@ enum TransactionStatus {
   CANCELLED
   EXPIRED
 }
-
-enum PaymentMethod {
-  MANUAL_TRANSFER
-  PAYMENT_GATEWAY
-}
