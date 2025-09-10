@@ -44,9 +44,9 @@ export class App {
     this.app.use("/rooms", roomRouter.getRouter());
     this.app.use("/property", propertyRouter.getRouter());
 
-    this.app.use("/transaction", transactionRouter.getRouter());
-    this.app.use("/review", reviewRouter.getRouter());
-    this.app.use("/report", reportRouter.getRouter());
+    this.app.use("/transactions", transactionRouter.getRouter());
+    this.app.use("/reviews", reviewRouter.getRouter());
+    this.app.use("/reports", reportRouter.getRouter());
 
     // Health check
     this.app.get("/health", (req, res) => {

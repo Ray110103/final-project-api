@@ -31,14 +31,7 @@ export class TransactionRouter {
       //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
       this.transactionController.getTransactions
     );
-    this.router.get(
-      "/tenant",
-      //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
-
-      this.transactionController.getTransactionsByTenant
-    );
-
+   
     // Create new transaction
     this.router.post(
       "/",
@@ -103,14 +96,14 @@ export class TransactionRouter {
     // Tenant routes
     this.router.get(
       "/tenant",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET as string),
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       this.jwtMiddleware.verifyRole(["TENANT"]),
       this.transactionController.getTransactionsByTenant
     );
 
     this.router.post(
       "/confirm",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET as string),
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       this.jwtMiddleware.verifyRole(["TENANT"]),
       validateBody(ConfirmPaymentDTO),
       this.transactionController.confirmPayment
