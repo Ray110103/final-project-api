@@ -26,22 +26,22 @@ model User {
   pictureProfile String?
   isVerified     Boolean @default(false)
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  properties  Property[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   Transaction Transaction[]
+  properties  Property[]
 
   @@map("users")
 }
 
 model Tenant {
-  id             Int        @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   name           String
-  email          String     @unique
+  email          String   @unique
   pictureProfile String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  Property       Property[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("tenants")
 }
@@ -52,10 +52,10 @@ enum Role {
 }
 
 model Property {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   title       String
   slug        String
-  status      Status   @default(ACTIVE)
+  status      Status  @default(ACTIVE)
   description String
   location    String
   thumbnail   String?
@@ -64,19 +64,16 @@ model Property {
   latitude    String
   longtitude  String
   category    String
-  
-  tenantId    Int?
-  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
 
-  userId      Int?
-  user        User?     @relation(fields: [userId], references: [id])
+  tenantId Int
+  tenant   User @relation(fields: [tenantId], references: [id])
 
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   deletedAt          DateTime?
   rooms              Room[]
-  propertyImages     PropertyImage[]
-  propertyFacilities PropertyFacility[]
+  images     PropertyImage[]
+  facilities PropertyFacility[]
 
   @@map("properties")
 }
@@ -84,23 +81,6 @@ model Property {
 enum Status {
   ACTIVE
   DRAFT
-}
-
-model Room {
-  id         Int   @id @default(autoincrement())
-  name       String
-  stock      Int
-  price      Decimal
-  propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
-  transactions         Transaction[]
-  seasonalRates       SeasonalRate[]
-  roomNonAvailability RoomNonAvailability[]
-
-  @@map("rooms")
 }
 
 model PropertyImage {
@@ -118,6 +98,7 @@ model PropertyImage {
 model PropertyFacility {
   id         Int      @id @default(autoincrement())
   title      String
+  icon       String?
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 
@@ -125,6 +106,36 @@ model PropertyFacility {
   updatedAt DateTime @updatedAt
 
   @@map("property_facilities")
+}
+
+model Room {
+  id          Int      @id @default(autoincrement())
+  name        String
+  stock       Int
+  price       Decimal
+  description String // ✅ tambahin kalau memang butuh
+  propertyId  Int
+  property    Property @relation(fields: [propertyId], references: [id])
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  transactions        Transaction[]
+  seasonalRates       SeasonalRate[]
+  roomNonAvailability RoomNonAvailability[]
+  roomImages          RoomImage[]
+
+  @@map("rooms")
+}
+
+model RoomImage {
+  id        Int      @id @default(autoincrement())
+  url       String
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("room_images")
 }
 
 model RoomNonAvailability {
@@ -142,7 +153,7 @@ model RoomNonAvailability {
 
 model SeasonalRate {
   id     Int      @id @default(autoincrement())
-  price  Decimal
+  price  Int
   date   DateTime
   roomId Int
   room   Room     @relation(fields: [roomId], references: [id])
@@ -171,10 +182,8 @@ model Transaction {
   expiredAt    DateTime?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
-  paymentMethod PaymentMethod
 
   // Relations
-
 
   @@map("transactions")
 }
@@ -184,7 +193,7 @@ enum TransactionStatus {
   WAITING_FOR_CONFIRMATION
   PAID
   CANCELLED
-  EXPIRED
+  EXPIRED
 }
 
 enum PaymentMethod {

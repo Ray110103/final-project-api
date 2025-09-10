@@ -13,6 +13,7 @@ import { TransactionRouter } from "./modules/transaction/transaction.router";
 
 export class App {
   app: Express;
+
   constructor() {
     this.app = express();
     
@@ -24,10 +25,12 @@ export class App {
     this.handleError();
     initializedWorkers();
   }
+
   private configure() {
     this.app.use(cors());
     this.app.use(express.json());
   }
+
   private routes() {
     const sampleRouter = new SampleRouter();
     const authRouter = new AuthRouter();
@@ -35,7 +38,7 @@ export class App {
     const propertyRouter = new PropertyRouter();
     const roomRouter = new RoomRouter();
     const transactionRouter = new TransactionRouter();
-    
+
     this.app.use("/samples", sampleRouter.getRouter);
     this.app.use("/auth", authRouter.getRouter());
     this.app.use("/profile", profileRouter.getRouter());
@@ -43,13 +46,14 @@ export class App {
     this.app.use("/property", propertyRouter.getRouter());
     this.app.use("/transactions", transactionRouter.getRouter());
   }
+
   private handleError() {
     this.app.use(errorMiddleware);
   }
+
   public start() {
     this.app.listen(PORT, () => {
       console.log(`Server Running On Port: ${PORT}`);
     });
   }
-  
 }

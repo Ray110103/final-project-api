@@ -24,6 +24,7 @@ export class RoomRouter {
     this.router.post(
       "/",
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]),
       uploader.upload().none(),
       validateBody(CreateRoomsDTO),
       this.roomController.createRoom

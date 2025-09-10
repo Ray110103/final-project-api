@@ -21,6 +21,10 @@ export class CreatePropertyDTO {
   @IsString()
   city!: string;
 
+  // @IsNotEmpty()
+  // @IsString()
+  // facilities!: string[];
+
   @IsOptional()
   @IsString()
   address?: string;
