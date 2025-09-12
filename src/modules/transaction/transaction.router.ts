@@ -68,15 +68,6 @@ export class TransactionRouter {
       this.transactionController.createTransaction
     );
 
-    this.router.post(
-      "/upload-payment-proof",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET as string),
-      this.jwtMiddleware.verifyRole(["USER"]),
-      this.uploaderMiddleware.upload().single("paymentProof"),
-      this.uploaderMiddleware.fileFilter(["image/jpeg", "image/png"]),
-      validateBody(uploadPaymentProofDTO),
-      this.transactionController.uploadPaymentProof
-    );
 
     this.router.get(
       "/user",
