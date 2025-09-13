@@ -2,13 +2,15 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ApiError } from "../../utils/api-error";
 import { CreateRoomsDTO } from "./dto/create-room.dto";
 import { GetRoomsDTO } from "./dto/get-room.dto";
-import { Prisma } from "@prisma/client";
+import { CloudinaryService } from "../cloudinary/cloudinary.service";
 
 export class RoomService {
   private prisma: PrismaService;
+  private cloudinaryService: CloudinaryService;
 
   constructor() {
     this.prisma = new PrismaService();
+    this.cloudinaryService = new CloudinaryService();
   }
 
   // ✅ GET ROOMS
@@ -24,7 +26,6 @@ export class RoomService {
 
     const whereClause: any = {};
 
-    // If property is provided, validate it exists and get its ID
     if (property) {
       const isNumeric = !isNaN(Number(property));
 
@@ -71,6 +72,7 @@ export class RoomService {
             tenant: true,
           },
         },
+        images: true,
       },
     });
 
@@ -82,57 +84,72 @@ export class RoomService {
     };
   };
 
-  // ✅ CREATE ROOM
-  createRoom = async (body: CreateRoomsDTO, userId: number) => {
-  const price = parseInt(body.price as any, 10);
-  const limit = parseInt(body.limit as any, 10);
+  // ✅ CREATE ROOM (with multiple images)
+  createRoom = async (
+    body: CreateRoomsDTO,
+    userId: number,
+    images: Express.Multer.File[]
+  ) => {
+    const price = parseInt(body.price as any, 10);
+    const limit = parseInt(body.limit as any, 10);
 
-  if (isNaN(price) || isNaN(limit)) {
-    throw new ApiError("Invalid price or limit format", 400);
-  }
+    if (isNaN(price) || isNaN(limit)) {
+      throw new ApiError("Invalid price or limit format", 400);
+    }
 
-  // Accept either numeric id or slug in body.property
-  const maybeId = Number(body.property);
-  let property;
+    // Accept either numeric id or slug in body.property
+    const maybeId = Number(body.property);
+    let property;
 
-  if (!isNaN(maybeId)) {
-    property = await this.prisma.property.findFirst({
-      where: {
-        id: maybeId,
-        OR: [{ tenantId: userId }],
+    if (!isNaN(maybeId)) {
+      property = await this.prisma.property.findFirst({
+        where: {
+          id: maybeId,
+          tenantId: userId,
+        },
+      });
+    } else {
+      property = await this.prisma.property.findFirst({
+        where: {
+          slug: body.property,
+          tenantId: userId,
+        },
+      });
+    }
+
+    if (!property) {
+      throw new ApiError("Property not found or you do not have access", 404);
+    }
+
+    // ✅ Upload images to Cloudinary
+    let uploadedImages: { secure_url: string }[] = [];
+    if (images && images.length > 0) {
+      uploadedImages = await Promise.all(
+        images.map((file) => this.cloudinaryService.upload(file))
+      );
+    }
+
+    // ✅ Create room and save uploaded images
+    const room = await this.prisma.room.create({
+      data: {
+        name: body.name,
+        stock: limit,
+        price,
+        description: body.description,
+        propertyId: property.id,
+        images: {
+          create: uploadedImages.map((img) => ({ url: img.secure_url })),
+        },
+      },
+      include: {
+        property: { select: { id: true, title: true, slug: true } },
+        images: true,
       },
     });
-  } else {
-    property = await this.prisma.property.findFirst({
-      where: {
-        slug: body.property,
-        OR: [{ tenantId: userId }],
-      },
-    });
-  }
 
-  if (!property) {
-    throw new ApiError("Property not found or you do not have access", 404);
-  }
-
-  const room = await this.prisma.room.create({
-    data: {
-      name: body.name,
-      stock: limit,
-      price, // ✅ langsung number (Int)
-      description: body.description,
-      propertyId: property.id,
-    },
-    include: {
-      property: {
-        select: { id: true, title: true, slug: true },
-      },
-    },
-  });
-
-  return {
-    message: "Room created successfully",
-    data: room,
+    return {
+      message: "Room created successfully",
+      data: room,
+    };
   };
-};
 }

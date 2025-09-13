@@ -31,9 +31,9 @@ model User {
 
   Transaction Transaction[]
   properties  Property[]
+  Review      Review[]
 
   @@map("users")
-  Review Review[]
 }
 
 model Tenant {
@@ -43,9 +43,9 @@ model Tenant {
   pictureProfile String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  Reply          Reply[]
 
   @@map("tenants")
-  Reply Reply[]
 }
 
 enum Role {
@@ -70,15 +70,15 @@ model Property {
   tenantId Int
   tenant   User @relation(fields: [tenantId], references: [id])
 
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  deletedAt          DateTime?
-  rooms              Room[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  deletedAt  DateTime?
+  rooms      Room[]
   images     PropertyImage[]
   facilities PropertyFacility[]
+  Review     Review[]
 
   @@map("properties")
-  Review Review[]
 }
 
 enum Status {
@@ -101,7 +101,6 @@ model PropertyImage {
 model PropertyFacility {
   id         Int      @id @default(autoincrement())
   title      String
-  icon       String?
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 
@@ -125,7 +124,7 @@ model Room {
   transactions        Transaction[]
   seasonalRates       SeasonalRate[]
   roomNonAvailability RoomNonAvailability[]
-  roomImages          RoomImage[]
+  images              RoomImage[]
 
   @@map("rooms")
 }
@@ -168,28 +167,28 @@ model SeasonalRate {
 }
 
 model Transaction {
-  id           Int               @id @default(autoincrement())
-  uuid         String            @unique @default(uuid())
-  userId       Int
-  user         User              @relation(fields: [userId], references: [id])
-  username     String
-  roomId       Int
-  room         Room              @relation(fields: [roomId], references: [id])
-  qty          Int
-  status       TransactionStatus @default(WAITING_FOR_PAYMENT)
-  total        Int
-  startDate    DateTime
-  endDate      DateTime
-  paymentProof String?
-  invoice_url  String?
-  expiredAt    DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id            Int               @id @default(autoincrement())
+  uuid          String            @unique @default(uuid())
+  userId        Int
+  user          User              @relation(fields: [userId], references: [id])
+  username      String
+  roomId        Int
+  room          Room              @relation(fields: [roomId], references: [id])
+  qty           Int
+  status        TransactionStatus @default(WAITING_FOR_PAYMENT)
+  total         Int
+  startDate     DateTime
+  endDate       DateTime
+  paymentProof  String?
+  invoice_url   String?
+  expiredAt     DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   paymentMethod PaymentMethod
-  review       Review?
+  review        Review?
+
   @@map("transactions")
 }
-
 
 enum TransactionStatus {
   WAITING_FOR_PAYMENT
@@ -205,18 +204,19 @@ enum PaymentMethod {
 }
 
 model Review {
-  id         Int      @id @default(autoincrement())
-  comment    String
-  rating     Int      // 1-5 rating
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
-  transactionId Int   @unique
-  transaction Transaction @relation(fields: [transactionId], references: [id])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  replies    Reply[]
+  id            Int         @id @default(autoincrement())
+  comment       String
+  rating        Int // 1-5 rating
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  propertyId    Int
+  property      Property    @relation(fields: [propertyId], references: [id])
+  transactionId Int         @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  replies       Reply[]
+
   @@map("reviews")
 }
 
@@ -229,5 +229,6 @@ model Reply {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@map("replies")
 }

@@ -28,14 +28,21 @@ export class PropertyRouter {
       this.jwtMiddleware.verifyRole(["TENANT"]),
       this.uploaderMiddleware
         .upload()
-        .fields([{ name: "thumbnail", maxCount: 1 }]),
-      this.uploaderMiddleware.fileFilter([
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-      ]),
+        .fields([
+          { name: "thumbnail", maxCount: 1 },
+          { name: "images", maxCount: 10 }, // Multiple images allowed
+        ]),
+      this.uploaderMiddleware.fileFilter(["image/jpeg", "image/png", "image/webp"]),
       validateBody(CreatePropertyDTO),
       this.propertyController.createProperty
+    );
+
+    // New route to fetch properties by tenantId
+    this.router.get(
+      "/tenant/:tenantId", // New endpoint to fetch properties and rooms by tenantId
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT", "ADMIN"]), // Both TENANT and ADMIN can access
+      this.propertyController.getPropertiesByTenant // Handle this in the controller
     );
   };
 

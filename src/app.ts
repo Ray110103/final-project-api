@@ -4,7 +4,6 @@ import { PORT } from "./config/env";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { AuthRouter } from "./modules/auth/auth.router";
 import { ProfileRouter } from "./modules/profile/profile.router";
-import { PropertyRouter } from "./modules/property/property.router";
 import { RoomRouter } from "./modules/room/room.router";
 import { SampleRouter } from "./modules/sample/sample.router";
 
@@ -12,6 +11,7 @@ import { SampleRouter } from "./modules/sample/sample.router";
 import { TransactionRouter } from "./modules/transaction/transaction.router";
 import { ReviewRouter } from "./modules/review/review.router";
 import { ReportRouter } from "./modules/report/report.router";
+import { PropertyRouter } from "./modules/property/property.router";
 
 export class App {
   app: Express;

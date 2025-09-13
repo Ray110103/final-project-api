@@ -1,4 +1,6 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
+import { FacilityDTO } from "./facility.dto";
 
 export class CreatePropertyDTO {
   @IsNotEmpty()
@@ -21,10 +23,6 @@ export class CreatePropertyDTO {
   @IsString()
   city!: string;
 
-  // @IsNotEmpty()
-  // @IsString()
-  // facilities!: string[];
-
   @IsOptional()
   @IsString()
   address?: string;
@@ -36,4 +34,10 @@ export class CreatePropertyDTO {
   @IsNotEmpty()
   @IsString()
   longtitude!: string; // keep schema spelling
+
+  // ✅ fasilitas bisa array
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => FacilityDTO)
+  facilities?: FacilityDTO[];
 }
