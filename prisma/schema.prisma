@@ -32,6 +32,7 @@ model User {
   Transaction Transaction[]
   properties  Property[]
   Review      Review[]
+  Review      Review[]
 
   @@map("users")
 }
@@ -43,6 +44,7 @@ model Tenant {
   pictureProfile String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  Reply          Reply[]
   Reply          Reply[]
 
   @@map("tenants")
@@ -74,8 +76,13 @@ model Property {
   updatedAt  DateTime           @updatedAt
   deletedAt  DateTime?
   rooms      Room[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  deletedAt  DateTime?
+  rooms      Room[]
   images     PropertyImage[]
   facilities PropertyFacility[]
+  Review     Review[]
   Review     Review[]
 
   @@map("properties")
@@ -101,7 +108,6 @@ model PropertyImage {
 model PropertyFacility {
   id         Int      @id @default(autoincrement())
   title      String
-  icon       String?
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 
@@ -125,7 +131,7 @@ model Room {
   transactions        Transaction[]
   seasonalRates       SeasonalRate[]
   roomNonAvailability RoomNonAvailability[]
-  roomImages          RoomImage[]
+  images              RoomImage[]
 
   @@map("rooms")
 }
@@ -221,6 +227,19 @@ model Review {
   updatedAt     DateTime    @updatedAt
   replies       Reply[]
 
+  id            Int         @id @default(autoincrement())
+  comment       String
+  rating        Int // 1-5 rating
+  userId        Int
+  user          User        @relation(fields: [userId], references: [id])
+  propertyId    Int
+  property      Property    @relation(fields: [propertyId], references: [id])
+  transactionId Int         @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  replies       Reply[]
+
   @@map("reviews")
 }
 
@@ -234,5 +253,7 @@ model Reply {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+
   @@map("replies")
 }
+

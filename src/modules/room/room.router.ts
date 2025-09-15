@@ -5,7 +5,7 @@ import { validateBody } from "../../middlewares/validate.middleware";
 import { CreateRoomsDTO } from "./dto/create-room.dto";
 import { UploaderMiddleware } from "../../middlewares/uploader.middleware";
 
-const uploader = new UploaderMiddleware
+const uploader = new UploaderMiddleware();
 
 export class RoomRouter {
   private router: Router;
@@ -21,11 +21,14 @@ export class RoomRouter {
 
   private initializeRoutes = () => {
     this.router.get("/", this.roomController.getRoom);
+
     this.router.post(
       "/",
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       this.jwtMiddleware.verifyRole(["TENANT"]),
-      uploader.upload().none(),
+      uploader.upload().fields([
+        { name: "images", maxCount: 10 }, // ✅ support multiple images
+      ]),
       validateBody(CreateRoomsDTO),
       this.roomController.createRoom
     );
