@@ -3,6 +3,9 @@ import { Queue } from "bullmq";
 import { connection } from "../../config/redis";
 
 export class TransactionQueue {
+  removeTransactionQueue(uuid: string) {
+    throw new Error("Method not implemented.");
+  }
   private queue: Queue;
   private reminderQueue: Queue;
   

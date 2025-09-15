@@ -41,7 +41,7 @@ export class ReviewRouter {
     // Get reviews for a property
     this.router.get(
       "/property/:propertyId",
-      validateBody(GetReviewsDTO),
+      //validateBody(GetReviewsDTO),
       this.reviewController.getReviewsByProperty
     );
   };
