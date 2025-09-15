@@ -297,6 +297,10 @@ export class TransactionService {
   ) => {
     const { page, take, sortBy, sortOrder, status } = query;
     
+    if (status){
+
+    }
+    
     // First, get properties owned by this tenant
     const tenantProperties = await this.prisma.property.findMany({
       where: { tenantId: authUserId },
@@ -311,7 +315,7 @@ export class TransactionService {
           in: propertyIds,
         },
       },
-      ...(status && { status }),
+       
     };
 
     const transactions = await this.prisma.transaction.findMany({
@@ -378,7 +382,7 @@ export class TransactionService {
       const updatedTransaction = await tx.transaction.update({
         where: { uuid: data.uuid },
         data: {
-          status: data.action === "ACCEPT" ? "PAID" : "WAITING_FOR_PAYMENT",
+          status: data.type === "ACCEPT" ? "PAID" : "WAITING_FOR_PAYMENT",
         },
         include: {
           user: true,
@@ -423,7 +427,7 @@ export class TransactionService {
       }
     });
 
-    return { message: `Payment ${data.action === "ACCEPT" ? "approved" : "rejected"}` };
+    return { message: `Payment ${data.type === "ACCEPT" ? "approved" : "rejected"}` };
   };
 
   cancelTransactionByTenant = async (
@@ -471,6 +475,8 @@ export class TransactionService {
           },
         },
       });
+
+      
 
       // Send cancellation email notification
       const context = {

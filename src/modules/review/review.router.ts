@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { ReviewController } from "./review.controller";
 import { JwtMiddleware } from "../../middlewares/jwt.middleware";
-import { validateBody } from "../../middlewares/validation.middleware";
+import { validateBody } from "../../middlewares/validate.middleware";
 import { CreateReviewDTO } from "./dto/create-review.dto";
 import { CreateReplyDTO } from "./dto/create-reply.dto";
 import { GetReviewsDTO } from "./dto/get-reviews.dto";
