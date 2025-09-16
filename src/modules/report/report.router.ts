@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { ReportController } from "./report.controller";
 import { JwtMiddleware } from "../../middlewares/jwt.middleware";
-import { validateBody } from "../../middlewares/validation.middleware";
+import { validateBody} from "../../middlewares/validate.middleware";
 import { GetSalesReportDTO } from "./dto/get-sales-report.dto";
 import { GetPropertyReportDTO } from "./dto/get-property-report.dto";
 
@@ -24,7 +24,7 @@ export class ReportRouter {
       "/sales",
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       this.jwtMiddleware.verifyRole(["TENANT"]),
-      validateBody(GetSalesReportDTO),
+      //validateBody(GetSalesReportDTO),
       this.reportController.getSalesReport
     );
     
@@ -33,7 +33,7 @@ export class ReportRouter {
       "/property",
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       this.jwtMiddleware.verifyRole(["TENANT"]),
-      validateBody(GetPropertyReportDTO),
+      //validateBody(GetPropertyReportDTO),
       this.reportController.getPropertyReport
     );
   };

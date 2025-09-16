@@ -12,5 +12,5 @@ export class ConfirmPaymentDTO {
 
   @IsNotEmpty()
   @IsEnum(PaymentAction)
-  action!: PaymentAction;
+  type!: PaymentAction;
 }

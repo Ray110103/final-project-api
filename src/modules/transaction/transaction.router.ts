@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { JwtMiddleware } from "../../middlewares/jwt.middleware";
 import { UploaderMiddleware } from "../../middlewares/uploader.middleware";
-import { validateBody } from "../../middlewares/validation.middleware";
+import { validateBody } from "../../middlewares/validate.middleware";
 import { CreateTransactionDTO } from "./dto/create-transaction.dto";
 import { UpdateTransactionDTO } from "./dto/update-transaction.dto";
 import { uploadPaymentProofDTO } from "./dto/upload-payment-proof.dto";
@@ -10,6 +10,9 @@ import { get } from "http";
 import { GetTransactionDTO } from "./dto/get-transaction.dto";
 import { CancelTransactionDTO } from "./dto/cancel-transaction.dto";
 import { ConfirmPaymentDTO } from "./dto/confirm-payment.dto";
+import Xendit from 'xendit-node';
+
+
 
 export class TransactionRouter {
   private router: Router;
@@ -27,8 +30,8 @@ export class TransactionRouter {
   private intializeRoutes = () => {
     this.router.get(
       "/",
-      //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
       this.transactionController.getTransactions
     );
    
@@ -68,15 +71,6 @@ export class TransactionRouter {
       this.transactionController.createTransaction
     );
 
-    this.router.post(
-      "/upload-payment-proof",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET as string),
-      this.jwtMiddleware.verifyRole(["USER"]),
-      this.uploaderMiddleware.upload().single("paymentProof"),
-      this.uploaderMiddleware.fileFilter(["image/jpeg", "image/png"]),
-      validateBody(uploadPaymentProofDTO),
-      this.transactionController.uploadPaymentProof
-    );
 
     this.router.get(
       "/user",
@@ -101,7 +95,7 @@ export class TransactionRouter {
       this.transactionController.getTransactionsByTenant
     );
 
-    this.router.post(
+    this.router.patch(
       "/confirm",
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       this.jwtMiddleware.verifyRole(["TENANT"]),
@@ -109,7 +103,7 @@ export class TransactionRouter {
       this.transactionController.confirmPayment
     );
 
-    this.router.post(
+    this.router.patch(
       "/cancel-tenant",
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET as string),
       this.jwtMiddleware.verifyRole(["TENANT"]),

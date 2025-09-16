@@ -33,6 +33,7 @@ model User {
   properties  Property[]
   Review      Review[]
 
+
   @@map("users")
 }
 
@@ -44,6 +45,7 @@ model Tenant {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   Reply          Reply[]
+
 
   @@map("tenants")
 }
@@ -74,9 +76,11 @@ model Property {
   updatedAt  DateTime           @updatedAt
   deletedAt  DateTime?
   rooms      Room[]
+
   images     PropertyImage[]
   facilities PropertyFacility[]
   Review     Review[]
+
 
   @@map("properties")
 }
@@ -167,25 +171,28 @@ model SeasonalRate {
 }
 
 model Transaction {
-  id            Int               @id @default(autoincrement())
-  uuid          String            @unique @default(uuid())
-  userId        Int
-  user          User              @relation(fields: [userId], references: [id])
-  username      String
-  roomId        Int
-  room          Room              @relation(fields: [roomId], references: [id])
-  qty           Int
-  status        TransactionStatus @default(WAITING_FOR_PAYMENT)
-  total         Int
-  startDate     DateTime
-  endDate       DateTime
-  paymentProof  String?
-  invoice_url   String?
-  expiredAt     DateTime?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  paymentMethod PaymentMethod
-  review        Review?
+  id             Int               @id @default(autoincrement())
+  uuid           String            @unique @default(uuid())
+  userId         Int
+  user           User              @relation(fields: [userId], references: [id])
+  username       String
+  roomId         Int
+  room           Room              @relation(fields: [roomId], references: [id])
+  qty            Int
+  status         TransactionStatus @default(WAITING_FOR_PAYMENT)
+  total          Int
+  startDate      DateTime
+  endDate        DateTime
+  paymentProof   String?
+  invoice_url    String?
+  paymentLinkId  String? @unique // Xendit payment link ID 
+  paymentDetails Json? // Full payment response from Xendit
+  paidAt         DateTime? // When payment was completed
+  expiredAt      DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  paymentMethod  PaymentMethod
+  review         Review?
 
   @@map("transactions")
 }
@@ -204,6 +211,7 @@ enum PaymentMethod {
 }
 
 model Review {
+
   id            Int         @id @default(autoincrement())
   comment       String
   rating        Int // 1-5 rating
@@ -230,5 +238,7 @@ model Reply {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+
   @@map("replies")
 }
+
