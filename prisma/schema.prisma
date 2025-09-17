@@ -29,25 +29,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Transaction Transaction[]
-  properties  Property[]
-  Review      Review[]
-
+  Transaction   Transaction[]
+  properties    Property[]
+  Review        Review[]
+  tenantReplies Reply[]       @relation("UserTenantReplies")
 
   @@map("users")
-}
-
-model Tenant {
-  id             Int      @id @default(autoincrement())
-  name           String
-  email          String   @unique
-  pictureProfile String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  Reply          Reply[]
-
-
-  @@map("tenants")
 }
 
 enum Role {
@@ -76,11 +63,9 @@ model Property {
   updatedAt  DateTime           @updatedAt
   deletedAt  DateTime?
   rooms      Room[]
-
   images     PropertyImage[]
   facilities PropertyFacility[]
   Review     Review[]
-
 
   @@map("properties")
 }
@@ -105,6 +90,7 @@ model PropertyImage {
 model PropertyFacility {
   id         Int      @id @default(autoincrement())
   title      String
+  icon       String?
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 
@@ -128,7 +114,7 @@ model Room {
   transactions        Transaction[]
   seasonalRates       SeasonalRate[]
   roomNonAvailability RoomNonAvailability[]
-  images              RoomImage[]
+  roomImages          RoomImage[]
 
   @@map("rooms")
 }
@@ -171,28 +157,25 @@ model SeasonalRate {
 }
 
 model Transaction {
-  id             Int               @id @default(autoincrement())
-  uuid           String            @unique @default(uuid())
-  userId         Int
-  user           User              @relation(fields: [userId], references: [id])
-  username       String
-  roomId         Int
-  room           Room              @relation(fields: [roomId], references: [id])
-  qty            Int
-  status         TransactionStatus @default(WAITING_FOR_PAYMENT)
-  total          Int
-  startDate      DateTime
-  endDate        DateTime
-  paymentProof   String?
-  invoice_url    String?
-  paymentLinkId  String? @unique // Xendit payment link ID 
-  paymentDetails Json? // Full payment response from Xendit
-  paidAt         DateTime? // When payment was completed
-  expiredAt      DateTime?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  paymentMethod  PaymentMethod
-  review         Review?
+  id            Int               @id @default(autoincrement())
+  uuid          String            @unique @default(uuid())
+  userId        Int
+  user          User              @relation(fields: [userId], references: [id])
+  username      String
+  roomId        Int
+  room          Room              @relation(fields: [roomId], references: [id])
+  qty           Int
+  status        TransactionStatus @default(WAITING_FOR_PAYMENT)
+  total         Int
+  startDate     DateTime
+  endDate       DateTime
+  paymentProof  String?
+  invoice_url   String?
+  expiredAt     DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  paymentMethod PaymentMethod
+  review        Review?
 
   @@map("transactions")
 }
@@ -211,7 +194,6 @@ enum PaymentMethod {
 }
 
 model Review {
-
   id            Int         @id @default(autoincrement())
   comment       String
   rating        Int // 1-5 rating
@@ -234,11 +216,9 @@ model Reply {
   reviewId  Int
   review    Review   @relation(fields: [reviewId], references: [id])
   tenantId  Int
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenant    User     @relation("UserTenantReplies", fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-
   @@map("replies")
 }
-

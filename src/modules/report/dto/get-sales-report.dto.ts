@@ -1,5 +1,6 @@
 // /dashboard/report/dto/get-sales-report.dto.ts
-import { IsDate, IsOptional, IsString } from "class-validator";
+import { IsDate, IsIn, IsOptional, IsString } from "class-validator";
+import { Transform } from "class-transformer";
 import { PaginationQueryParams } from "../../pagination/dto/pagination.dto";
 
 export class GetSalesReportDTO extends PaginationQueryParams {
@@ -9,17 +10,23 @@ export class GetSalesReportDTO extends PaginationQueryParams {
 
   @IsOptional()
   @IsDate()
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   startDate?: Date;
 
   @IsOptional()
   @IsDate()
+  @Transform(({ value }) => (value ? new Date(value) : undefined))
   endDate?: Date;
 
-//   @IsOptional()
-//   @IsString()
-//   sortBy?: string = "createdAt";
+  @IsOptional()
+  @IsIn(["property", "transaction", "user"])
+  groupBy: "property" | "transaction" | "user" = "property";
 
-//   @IsOptional()
-//   @IsString()
-//   sortOrder?: "asc" | "desc" = "desc";
+  @IsOptional()
+  @IsIn(["date", "total"])
+  sortBy: "date" | "total" = "date";
+
+  @IsOptional()
+  @IsIn(["asc", "desc"])
+  sortOrder: "asc" | "desc" = "desc";
 }
