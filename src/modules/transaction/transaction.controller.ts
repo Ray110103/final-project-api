@@ -8,6 +8,7 @@ import { CancelTransactionDTO } from "./dto/cancel-transaction.dto";
 import { uploadPaymentProofDTO } from "./dto/upload-payment-proof.dto";
 import { CreateTransactionDTO } from "./dto/create-transaction.dto";
 import { ConfirmPaymentDTO } from "./dto/confirm-payment.dto";
+import { PaymentGatewayWebhookDTO } from "./dto/payment-gateway-webhook.dto";
 
 export class TransactionController {
   private transactionService: TransactionService;
@@ -75,6 +76,13 @@ export class TransactionController {
     const authUserId = res.locals.user.id;
     const body = plainToInstance(CancelTransactionDTO, req.body);
     const result = await this.transactionService.cancelTransactionByTenant(body, authUserId);
+    res.status(200).send(result);
+  };
+
+  // Webhook (no auth)
+  paymentGatewayWebhook = async (req: Request, res: Response) => {
+    const body = plainToInstance(PaymentGatewayWebhookDTO, req.body);
+    const result = await this.transactionService.paymentGatewayWebhook(body);
     res.status(200).send(result);
   };
 }

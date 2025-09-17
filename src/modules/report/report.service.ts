@@ -19,83 +19,162 @@ export class ReportService {
   }
 
   getSalesReport = async (query: GetSalesReportDTO, authUserId: number) => {
-    const { page, take, sortBy, sortOrder, startDate, endDate, propertyId } =
+    const { page, take, sortBy, sortOrder, startDate, endDate, propertyId, groupBy } =
       query;
 
-    // First, get properties owned by this tenant
+    // Ensure the authenticated user (tenant) only sees their properties' transactions
     const tenantProperties = await this.prisma.property.findMany({
       where: { tenantId: authUserId },
       select: { id: true },
     });
 
-    const propertyIds = tenantProperties.map((property) => property.id);
+    const propertyIds = tenantProperties.map((p) => p.id);
 
     const whereClause: Prisma.TransactionWhereInput = {
       room: {
-        propertyId: {
-          in: propertyIds,
-        },
+        propertyId: { in: propertyIds },
       },
       status: "PAID",
-      ...(startDate &&
-        endDate && {
-          createdAt: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
-        }),
-      ...(propertyId && {
-        room: {
-          propertyId: parseInt(propertyId),
-        },
-      }),
+      ...(startDate && endDate
+        ? { createdAt: { gte: startDate, lte: endDate } }
+        : {}),
+      ...(propertyId
+        ? {
+            room: {
+              propertyId: parseInt(propertyId),
+            },
+          }
+        : {}),
     };
 
-    const transactions = await this.prisma.transaction.findMany({
-      include: {
-        user: true,
-        room: {
-          include: {
-            property: true,
-          },
+    // Map report sortBy to Prisma orderBy for transaction list queries
+    const txOrderBy: any =
+      sortBy === "total"
+        ? { total: sortOrder }
+        : { createdAt: sortOrder };
+
+    if (groupBy === "transaction") {
+      const [transactions, total] = await Promise.all([
+        this.prisma.transaction.findMany({
+          include: { user: true, room: { include: { property: true } } },
+          orderBy: txOrderBy,
+          skip: (page - 1) * take,
+          take,
+          where: whereClause,
+        }),
+        this.prisma.transaction.count({ where: whereClause }),
+      ]);
+
+      const grandTotalSales = await this.prisma.transaction.aggregate({
+        _sum: { total: true },
+        where: whereClause,
+      });
+
+      return {
+        data: transactions,
+        meta: {
+          page,
+          take,
+          total,
+          grandTotalSales: grandTotalSales._sum.total || 0,
         },
-      },
-      orderBy: { [sortBy]: sortOrder },
-      skip: (page - 1) * take,
-      take: take,
+      };
+    }
+
+    // Load all filtered transactions for grouping (property or user)
+    const allTransactions = await this.prisma.transaction.findMany({
+      include: { user: true, room: { include: { property: true } } },
       where: whereClause,
     });
 
-    const total = await this.prisma.transaction.count({
-      where: whereClause,
-    });
+    const grandTotalSales = allTransactions.reduce((sum, t) => sum + t.total, 0);
 
-    // Calculate total sales
-    const totalSales = transactions.reduce(
-      (sum, transaction) => sum + transaction.total,
-      0
-    );
+    if (groupBy === "user") {
+      const byUser: Record<
+        number,
+        { user: any; totalSales: number; latestDate: Date | null; transactions: any[] }
+      > = {};
 
-    // Group by property if needed
-    const salesByProperty: Record<number, PropertySalesData> = {};
+      for (const t of allTransactions) {
+        const key = t.userId;
+        if (!byUser[key]) {
+          byUser[key] = {
+            user: t.user,
+            totalSales: 0,
+            latestDate: null,
+            transactions: [],
+          };
+        }
+        byUser[key].totalSales += t.total;
+        byUser[key].latestDate = byUser[key].latestDate
+          ? new Date(Math.max(byUser[key].latestDate.getTime(), t.createdAt.getTime()))
+          : t.createdAt;
+        byUser[key].transactions.push(t);
+      }
 
-    transactions.forEach((transaction) => {
-      const propertyId = transaction.room.propertyId;
-      if (!salesByProperty[propertyId]) {
-        salesByProperty[propertyId] = {
-          property: transaction.room.property,
+      let groups = Object.values(byUser);
+      // Sort groups by requested sortBy
+      if (sortBy === "total") {
+        groups.sort((a, b) =>
+          sortOrder === "asc" ? a.totalSales - b.totalSales : b.totalSales - a.totalSales
+        );
+      } else {
+        groups.sort((a, b) => {
+          const aTime = a.latestDate ? a.latestDate.getTime() : 0;
+          const bTime = b.latestDate ? b.latestDate.getTime() : 0;
+          return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+        });
+      }
+
+      const totalGroups = groups.length;
+      const paged = groups.slice((page - 1) * take, (page - 1) * take + take);
+      return {
+        data: paged,
+        meta: { page, take, total: totalGroups, grandTotalSales },
+      };
+    }
+
+    // Default: groupBy property
+    const byProperty: Record<
+      number,
+      { property: any; totalSales: number; latestDate: Date | null; transactions: any[] }
+    > = {};
+
+    for (const t of allTransactions) {
+      const key = t.room.propertyId;
+      if (!byProperty[key]) {
+        byProperty[key] = {
+          property: t.room.property,
           totalSales: 0,
+          latestDate: null,
           transactions: [],
         };
       }
-      salesByProperty[propertyId].totalSales += transaction.total;
-      salesByProperty[propertyId].transactions.push(transaction);
-    });
+      byProperty[key].totalSales += t.total;
+      byProperty[key].latestDate = byProperty[key].latestDate
+        ? new Date(
+            Math.max(byProperty[key].latestDate.getTime(), t.createdAt.getTime())
+          )
+        : t.createdAt;
+      byProperty[key].transactions.push(t);
+    }
 
-    return {
-      data: Object.values(salesByProperty),
-      meta: { page, take, total, totalSales },
-    };
+    let groups = Object.values(byProperty);
+    if (sortBy === "total") {
+      groups.sort((a, b) =>
+        sortOrder === "asc" ? a.totalSales - b.totalSales : b.totalSales - a.totalSales
+      );
+    } else {
+      groups.sort((a, b) => {
+        const aTime = a.latestDate ? a.latestDate.getTime() : 0;
+        const bTime = b.latestDate ? b.latestDate.getTime() : 0;
+        return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+      });
+    }
+
+    const totalGroups = groups.length;
+    const paged = groups.slice((page - 1) * take, (page - 1) * take + take);
+    return { data: paged, meta: { page, take, total: totalGroups, grandTotalSales } };
   };
 
   getPropertyReport = async (
@@ -136,7 +215,14 @@ export class ReportService {
 
         // Get all days in the month
         const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-        const calendar = [];
+        const calendar = [] as Array<{
+          date: string;
+          available: boolean;
+          stock: number;
+          booked: boolean;
+          bookedUnits: number;
+          availableUnits: number;
+        }>;
 
         for (let day = 1; day <= daysInMonth; day++) {
           const date = new Date(year, monthIndex, day);
@@ -146,16 +232,23 @@ export class ReportService {
             (na) => new Date(na.date).toDateString() === date.toDateString()
           );
 
-          // Check if room is booked on this date
-          const isBooked = room.transactions.some(
-            (t) => new Date(t.startDate) <= date && new Date(t.endDate) >= date
-          );
+          // Sum booked units (qty) on this date across overlapping transactions
+          const bookedUnits = room.transactions
+            .filter(
+              (t) => new Date(t.startDate) <= date && new Date(t.endDate) >= date
+            )
+            .reduce((sum, t) => sum + t.qty, 0);
+
+          const availableUnits = Math.max(isNonAvailable ? 0 : room.stock - bookedUnits, 0);
+          const isBooked = bookedUnits > 0;
 
           calendar.push({
             date: date.toISOString().split("T")[0],
             available: !isNonAvailable && !isBooked,
             stock: room.stock,
             booked: isBooked,
+            bookedUnits,
+            availableUnits,
           });
         }
 
