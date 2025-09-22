@@ -6,7 +6,10 @@
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "ts-node src/scripts/seed.ts",
+    "clear-seed": "ts-node src/scripts/clear-seed.ts",
+    "reseed": "npm run clear-seed && npm run seed"
   },
   "keywords": [],
   "author": "",

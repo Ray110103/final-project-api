@@ -38,25 +38,18 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Transaction        Transaction[]
-  properties         Property[]
+  Transaction          Transaction[]
+  properties           Property[]
   Review             Review[]
   propertyCategories PropertyCategory[] // ✅ Relation to categories created by this tenant
 
+  tenantReplies Reply[]       @relation("UserTenantReplies")
+
   @@map("users")
+
 }
 
-model Tenant {
-  id             Int      @id @default(autoincrement())
-  name           String
-  email          String   @unique
-  pictureProfile String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  Reply          Reply[]
 
-  @@map("tenants")
-}
 
 enum Role {
   TENANT
@@ -260,7 +253,7 @@ enum PaymentMethod {
 model Review {
   id            Int         @id @default(autoincrement())
   comment       String
-  rating        Int
+  rating        Int // 1-5 rating
   userId        Int
   user          User        @relation(fields: [userId], references: [id])
   propertyId    Int
@@ -280,7 +273,7 @@ model Reply {
   reviewId  Int
   review    Review   @relation(fields: [reviewId], references: [id])
   tenantId  Int
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenant    User     @relation("UserTenantReplies", fields: [tenantId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
