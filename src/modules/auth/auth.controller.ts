@@ -72,7 +72,7 @@ export class AuthController {
 
   verifyEmailAndSetPassword = async (req: Request, res: Response) => {
     try {
-      const { token, password } = req.body; // token + password dari frontend
+      const { token, password } = req.body; 
       const result = await this.authService.verifyEmailAndSetPassword(
         token,
         password
@@ -86,8 +86,6 @@ export class AuthController {
     }
   };
 
-  // Google OAuth callback
-  // auth.controller.ts - Ubah redirect URL
   googleCallback = async (req: Request, res: Response) => {
     try {
       const { user } = req as any;
@@ -108,7 +106,6 @@ export class AuthController {
 
       const result = await this.authService.loginWithOAuth(oauthData);
 
-      // PERBAIKI INI - Hapus /auth dari path
       res.redirect(
         `${process.env.FRONTEND_URL}/callback?token=${result.accessToken}`
       );
@@ -118,12 +115,8 @@ export class AuthController {
     }
   };
 
-  // auth.controller.ts
   githubCallback = async (req: Request, res: Response) => {
     try {
-      console.log("=== GITHUB CALLBACK DEBUG ===");
-      console.log("User from passport:", req.user);
-
       const { user } = req as any;
 
       if (!user) {
@@ -156,7 +149,6 @@ export class AuthController {
     }
   };
 
-  // OAuth failure handler
   oauthFailure = async (req: Request, res: Response) => {
     console.error("OAuth authentication failed");
     res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);

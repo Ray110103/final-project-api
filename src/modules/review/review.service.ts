@@ -14,7 +14,6 @@ export class ReviewService {
   }
 
   createReview = async (data: CreateReviewDTO, authUserId: number) => {
-    // Check if transaction exists and belongs to user
     const transaction = await this.prisma.transaction.findFirst({
       where: {
         uuid: data.transactionUuid,
@@ -35,7 +34,6 @@ export class ReviewService {
       throw new ApiError("Transaction not found or not eligible for review", 404);
     }
 
-    // Check if review already exists for this transaction
     const existingReview = await this.prisma.review.findUnique({
       where: { transactionId: transaction.id },
     });
@@ -44,7 +42,6 @@ export class ReviewService {
       throw new ApiError("Review already exists for this transaction", 400);
     }
 
-    // Create review
     const review = await this.prisma.review.create({
       data: {
         comment: data.comment,
@@ -68,7 +65,6 @@ export class ReviewService {
   };
 
   createReply = async (data: CreateReplyDTO, authUserId: number) => {
-    // Check if review exists
     const review = await this.prisma.review.findUnique({
       where: { id: data.reviewId },
       include: {
@@ -80,12 +76,9 @@ export class ReviewService {
       throw new ApiError("Review not found", 404);
     }
 
-    // Check if tenant owns the property
     if (review.property.tenantId !== authUserId) {
       throw new ApiError("You are not authorized to reply to this review", 403);
     }
-
-    // Create reply
     const reply = await this.prisma.reply.create({
       data: {
         comment: data.comment,
@@ -103,8 +96,6 @@ export class ReviewService {
       },
     });
 
-    // Notify user about reply
-    // (Implementation of notification service would go here)
 
     return { message: "Reply created successfully", data: reply };
   };

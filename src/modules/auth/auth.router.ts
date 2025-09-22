@@ -25,7 +25,6 @@ export class AuthRouter {
   }
 
   private initializeRoutes = () => {
-    // Traditional Auth Routes
     this.router.post(
       "/register",
       validateBody(RegisterDTO),
@@ -73,12 +72,11 @@ export class AuthRouter {
       this.authController.resendVerification
     );
 
-    // OAuth Routes - Google
     this.router.get(
       "/google",
       passport.authenticate("google", {
         scope: ["profile", "email"],
-        prompt: "consent", // Force consent screen untuk development
+        prompt: "consent", 
         accessType: "offline",
       })
     );

@@ -33,7 +33,6 @@ export class AuthService {
       throw new ApiError("Email already used", 400);
     }
 
-    // buat user tanpa password & belum verified
     const newUser = await this.prisma.user.create({
       data: {
         name: body.name,
@@ -43,7 +42,6 @@ export class AuthService {
       omit: { password: true },
     });
 
-    // generate token verifikasi
     const payload = { id: newUser.id };
     const token = this.jwtService.generateToken(
       payload,
@@ -53,7 +51,6 @@ export class AuthService {
 
     const verificationLink = `http://localhost:3000/register/verify-email/${token}`;
 
-    // kirim email dengan tombol verifikasi
     await this.mailService.sendMail(
       body.email,
       "Verify Your Email - PropertyRent",
@@ -116,12 +113,10 @@ export class AuthService {
       throw new ApiError("Email already used", 400);
     }
 
-    // Hash password yang diinput user
     const hashedPassword = await this.passwordService.hashPassword(
       body.password
     );
 
-    // Buat tenant dengan password tapi belum verified
     const newTenant = await this.prisma.user.create({
       data: {
         name: body.name,
@@ -133,7 +128,6 @@ export class AuthService {
       omit: { password: true },
     });
 
-    // Generate token verifikasi
     const payload = { id: newTenant.id };
     const token = this.jwtService.generateToken(
       payload,
@@ -143,7 +137,6 @@ export class AuthService {
 
     const verificationLink = `http://localhost:3000/register/verify-email-tenant/${token}`;
 
-    // Kirim email verifikasi
     await this.mailService.sendMail(
       body.email,
       "Verify Your Email - PropertyRent Tenant",
@@ -218,7 +211,6 @@ export class AuthService {
   };
 
   verifyEmailAndSetPassword = async (token: string, password: string) => {
-    // Verifikasi token
     const decoded = this.jwtService.verifyToken(
       token,
       process.env.JWT_SECRET_VERIFY!
@@ -236,10 +228,8 @@ export class AuthService {
       throw new ApiError("User already verified", 400);
     }
 
-    // Hash password baru
     const hashedPassword = await this.passwordService.hashPassword(password);
 
-    // Update user -> set password & verified = true
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -248,7 +238,6 @@ export class AuthService {
       },
     });
 
-    // Kirim welcome email setelah verifikasi berhasil
     try {
       const emailSubject =
         user.role === "TENANT"
@@ -261,7 +250,6 @@ export class AuthService {
       });
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
-      // Don't throw error, email failure shouldn't stop verification
     }
 
     return {
@@ -282,13 +270,11 @@ export class AuthService {
       { expiresIn: "1h" }
     );
 
-    // Tentukan verification link berdasarkan role
     const verificationLink =
       user.role === "TENANT"
         ? `http://localhost:3000/register/verify-email-tenant/${token}`
         : `http://localhost:3000/register/verify-email/${token}`;
 
-    // Tentukan subject berdasarkan role
     const emailSubject =
       user.role === "TENANT"
         ? "Verify Your Email - PropertyRent Tenant"
@@ -303,19 +289,16 @@ export class AuthService {
     return { message: "Verification email resent" };
   };
 
-  // Method baru untuk OAuth login
   loginWithOAuth = async (
     userData: OAuthUserData,
     role: "USER" | "TENANT" = "USER"
   ) => {
     try {
-      // Cek apakah user sudah ada berdasarkan email
       let user = await this.prisma.user.findFirst({
         where: { email: userData.email },
       });
 
       if (user) {
-        // User sudah ada, update provider info jika belum ada
         if (!user.provider || user.provider !== userData.provider) {
           user = await this.prisma.user.update({
             where: { id: user.id },
@@ -323,12 +306,11 @@ export class AuthService {
               provider: userData.provider,
               providerId: userData.providerId,
               avatar: userData.avatar,
-              isVerified: true, // OAuth users dianggap verified
+              isVerified: true, 
             },
           });
         }
       } else {
-        // User baru, buat akun baru
         user = await this.prisma.user.create({
           data: {
             name: userData.name,
@@ -336,14 +318,12 @@ export class AuthService {
             provider: userData.provider,
             providerId: userData.providerId,
             avatar: userData.avatar,
-            pictureProfile: userData.avatar, // Gunakan field yang sudah ada
-            isVerified: true, // OAuth users dianggap verified
-            role: role, // Use parameter role
-            // password tidak disertakan karena optional untuk OAuth users
+            pictureProfile: userData.avatar, 
+            isVerified: true, 
+            role: role, 
           },
         });
 
-        // Kirim welcome email
         try {
           await this.mailService.sendMail(
             userData.email,
@@ -356,16 +336,13 @@ export class AuthService {
           );
         } catch (emailError) {
           console.error("Failed to send welcome email:", emailError);
-          // Don't throw error, email failure shouldn't stop OAuth login
         }
       }
 
-      // Pastikan user tidak null sebelum generate token
       if (!user) {
         throw new ApiError("Failed to create or update user", 500);
       }
 
-      // Generate JWT token
       const payload = { id: user.id, role: user.role };
       const accessToken = this.jwtService.generateToken(
         payload,
@@ -373,7 +350,6 @@ export class AuthService {
         { expiresIn: "2h" }
       );
 
-      // Return user without password
       const { password, ...userWithoutPassword } = user;
       return { ...userWithoutPassword, accessToken };
     } catch (error) {
@@ -385,7 +361,6 @@ export class AuthService {
     }
   };
 
-  // Tambah method khusus untuk verify tenant (tanpa set password)
   verifyEmailTenant = async (token: string) => {
     const decoded = this.jwtService.verifyToken(
       token,
@@ -408,7 +383,6 @@ export class AuthService {
       throw new ApiError("Invalid verification link", 400);
     }
 
-    // Update hanya status verified (password sudah ada)
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -416,7 +390,6 @@ export class AuthService {
       },
     });
 
-    // Kirim welcome email
     try {
       await this.mailService.sendMail(
         user.email,
@@ -437,7 +410,6 @@ export class AuthService {
   };
 
   updateEmail = async (userId: number, body: UpdateEmailDTO) => {
-  // Cari user berdasarkan ID
   const user = await this.prisma.user.findFirst({
     where: { id: userId },
   });
@@ -446,7 +418,6 @@ export class AuthService {
     throw new ApiError("User not found", 404);
   }
 
-  // Validasi password
   if (!user.password) {
     throw new ApiError("Password required for email update", 400);
   }
@@ -460,7 +431,6 @@ export class AuthService {
     throw new ApiError("Invalid password", 400);
   }
 
-  // Cek apakah email baru sudah digunakan
   const existingUser = await this.prisma.user.findFirst({
     where: { 
       email: body.newEmail,
@@ -472,12 +442,10 @@ export class AuthService {
     throw new ApiError("Email already used by another account", 400);
   }
 
-  // Cek apakah email sama dengan email saat ini
   if (user.email === body.newEmail) {
     throw new ApiError("New email must be different from current email", 400);
   }
 
-  // Generate token untuk verifikasi email baru
   const payload = { id: userId, newEmail: body.newEmail };
   const token = this.jwtService.generateToken(
     payload,
@@ -485,7 +453,6 @@ export class AuthService {
     { expiresIn: "1h" }
   );
 
-  // Simpan pending email dan token
   await this.prisma.user.update({
     where: { id: userId },
     data: {
@@ -497,7 +464,6 @@ export class AuthService {
 
   const verificationLink = `${process.env.FRONTEND_URL}/verify-new-email/${token}`;
 
-  // Kirim email verifikasi ke email baru
   await this.mailService.sendMail(
     body.newEmail,
     "Verify Your New Email - PropertyRent",
@@ -517,7 +483,6 @@ export class AuthService {
 };
 
 verifyNewEmail = async (token: string) => {
-  // Verifikasi token
   const decoded = this.jwtService.verifyToken(
     token,
     process.env.JWT_SECRET_EMAIL_UPDATE!
@@ -534,17 +499,14 @@ verifyNewEmail = async (token: string) => {
     throw new ApiError("Invalid or expired verification token", 400);
   }
 
-  // Cek apakah token sudah expired
   if (user.emailTokenExpiry && user.emailTokenExpiry < new Date()) {
     throw new ApiError("Verification token has expired", 400);
   }
 
-  // Cek apakah pending email masih sama
   if (user.pendingEmail !== decoded.newEmail) {
     throw new ApiError("Email verification mismatch", 400);
   }
 
-  // Update email dari pendingEmail
   await this.prisma.user.update({
     where: { id: user.id },
     data: {
@@ -556,10 +518,9 @@ verifyNewEmail = async (token: string) => {
     },
   });
 
-  // Kirim konfirmasi email berhasil diubah ke email lama dan baru
   try {
     await this.mailService.sendMail(
-      user.email, // email lama
+      user.email, 
       "Email Address Changed - PropertyRent",
       "email-changed-notification",
       {
@@ -570,7 +531,7 @@ verifyNewEmail = async (token: string) => {
     );
 
     await this.mailService.sendMail(
-      decoded.newEmail, // email baru
+      decoded.newEmail, 
       "Email Address Successfully Updated - PropertyRent",
       "email-update-success",
       {
@@ -596,7 +557,6 @@ resendEmailVerification = async (userId: number) => {
     throw new ApiError("User not found", 404);
   }
 
-  // Jika ada pending email, kirim verifikasi untuk email baru
   if (user.pendingEmail) {
     const payload = { id: userId, newEmail: user.pendingEmail };
     const token = this.jwtService.generateToken(
@@ -630,7 +590,6 @@ resendEmailVerification = async (userId: number) => {
     return { message: "Verification email resent to your new email address" };
   }
 
-  // Jika email current belum verified
   if (!user.isVerified) {
     const payload = { id: user.id };
     const token = this.jwtService.generateToken(
