@@ -46,7 +46,10 @@ model User {
   tenantReplies Reply[] @relation("UserTenantReplies")
 
   @@map("users")
+
 }
+
+
 
 enum Role {
   TENANT

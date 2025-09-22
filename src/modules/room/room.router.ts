@@ -47,16 +47,35 @@ export class RoomRouter {
       this.roomController.getRoomsByPropertySlug
     );
 
-    // ========================================
-    // GENERAL/PUBLIC ROUTES
-    // ========================================
-
-    // Get all rooms (with search/filter) - PUBLIC
     this.router.get("/", this.roomController.getRoom);
 
-    // ========================================
-    // PROTECTED ROUTES (TENANT only)
-    // ========================================
+    this.router.post(
+      "/seasonal-rates",
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]),
+      this.roomController.createSeasonalRate
+    );
+
+    this.router.get(
+      "/seasonal-rates",
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]),
+      this.roomController.getSeasonalRates
+    );
+
+    this.router.put(
+      "/seasonal-rates/:id",
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]),
+      this.roomController.updateSeasonalRate
+    );
+
+    this.router.delete(
+      "/seasonal-rates/:id",
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]),
+      this.roomController.deleteSeasonalRate
+    );
 
     // CREATE ROOM
     this.router.post(
@@ -95,33 +114,7 @@ export class RoomRouter {
     // GET SINGLE ROOM BY ID - MUST BE LAST among GET routes
     this.router.get("/:id", this.roomController.getRoomById);
 
-    this.router.post(
-      "/seasonal-rates",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      this.jwtMiddleware.verifyRole(["TENANT"]),
-      this.roomController.createSeasonalRate
-    );
-
-    this.router.get(
-      "/seasonal-rates",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      this.jwtMiddleware.verifyRole(["TENANT"]),
-      this.roomController.getSeasonalRates
-    );
-
-    this.router.put(
-      "/seasonal-rates/:id",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      this.jwtMiddleware.verifyRole(["TENANT"]),
-      this.roomController.updateSeasonalRate
-    );
-
-    this.router.delete(
-      "/seasonal-rates/:id",
-      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      this.jwtMiddleware.verifyRole(["TENANT"]),
-      this.roomController.deleteSeasonalRate
-    );
+    
   };
 
   getRouter = () => this.router;

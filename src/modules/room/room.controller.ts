@@ -17,7 +17,6 @@ export class RoomController {
     this.roomService = new RoomService();
   }
 
-  // GET ALL ROOMS (with search/filter)
   getRoom = async (req: Request, res: Response) => {
     try {
       const query = req.query as unknown as GetRoomsDTO;
@@ -32,7 +31,6 @@ export class RoomController {
     }
   };
 
-  // GET ROOMS BY PROPERTY SLUG - Fixed method
   getRoomsByPropertySlug = async (req: Request, res: Response) => {
     const { slug } = req.params;
     console.log("Received request for property slug:", slug);
@@ -40,7 +38,6 @@ export class RoomController {
     try {
       const rooms = await this.roomService.getRoomsByPropertySlug(slug);
 
-      // Always return 200 with rooms array (empty or with data)
       return res.status(200).json(rooms);
     } catch (error) {
       console.error("Error fetching rooms by property slug:", error);
@@ -59,7 +56,6 @@ export class RoomController {
     }
   };
 
-  // GET SINGLE ROOM BY ID
   getRoomById = async (req: Request, res: Response) => {
     try {
       const roomId = Number(req.params.id);
@@ -82,7 +78,6 @@ export class RoomController {
     }
   };
 
-  // Add this new method to RoomController
   getTenantRooms = async (req: Request, res: Response) => {
     try {
       const authUserId = res.locals.user.id; // Get tenant ID from JWT
@@ -103,7 +98,6 @@ export class RoomController {
     }
   };
 
-  // MARK ROOM AS UNAVAILABLE
   markRoomAsUnavailable = async (req: Request, res: Response) => {
     try {
       const { roomId, date, reason } = req.body;
@@ -143,7 +137,6 @@ export class RoomController {
     }
   };
 
-  // CREATE ROOM
   createRoom = async (req: Request, res: Response) => {
     try {
       const authUserId = res.locals.user.id;
@@ -180,7 +173,6 @@ export class RoomController {
     }
   };
 
-  // UPDATE ROOM
   updateRoom = async (req: Request, res: Response) => {
     try {
       const roomId = Number(req.params.id);
@@ -224,7 +216,6 @@ export class RoomController {
     }
   };
 
-  // DELETE ROOM
   deleteRoom = async (req: Request, res: Response) => {
     try {
       const roomId = Number(req.params.id);
@@ -266,7 +257,13 @@ export class RoomController {
       );
       res.status(201).json(result);
     } catch (error) {
-      // Error handling logic
+      console.error("Error creating seasonal rate:", error);
+
+      if (error instanceof ApiError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   };
 
@@ -278,7 +275,13 @@ export class RoomController {
       const result = await this.roomService.getSeasonalRates(query, authUserId);
       res.status(200).json(result);
     } catch (error) {
-      // Error handling logic
+      console.error("Error fetching seasonal rates:", error);
+
+      if (error instanceof ApiError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   };
 
@@ -286,6 +289,10 @@ export class RoomController {
     try {
       const seasonalRateId = Number(req.params.id);
       const authUserId = res.locals.user.id;
+
+      if (!seasonalRateId || isNaN(seasonalRateId)) {
+        throw new ApiError("Invalid seasonal rate ID", 400);
+      }
 
       const bodyDto = plainToInstance(UpdateSeasonalRateDTO, req.body);
       const errors = await validate(bodyDto);
@@ -304,7 +311,13 @@ export class RoomController {
       );
       res.status(200).json(result);
     } catch (error) {
-      // Error handling logic
+      console.error("Error updating seasonal rate:", error);
+
+      if (error instanceof ApiError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   };
 
@@ -313,13 +326,23 @@ export class RoomController {
       const seasonalRateId = Number(req.params.id);
       const authUserId = res.locals.user.id;
 
+      if (!seasonalRateId || isNaN(seasonalRateId)) {
+        throw new ApiError("Invalid seasonal rate ID", 400);
+      }
+
       const result = await this.roomService.deleteSeasonalRate(
         seasonalRateId,
         authUserId
       );
       res.status(200).json(result);
     } catch (error) {
-      // Error handling logic
+      console.error("Error deleting seasonal rate:", error);
+
+      if (error instanceof ApiError) {
+        res.status(error.statusCode).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   };
 }
