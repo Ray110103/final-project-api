@@ -73,15 +73,14 @@ export class AuthRouter {
       this.authController.resendVerification
     );
 
-    // OAuth Routes - Google
-    this.router.get(
-      "/google",
-      passport.authenticate("google", {
-        scope: ["profile", "email"],
-        prompt: "consent", // Force consent screen untuk development
-        accessType: "offline",
-      })
-    );
+  this.router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "consent", // Force consent screen untuk development
+    accessType: "offline",
+  } as any)
+);
 
     this.router.get(
       "/google/callback",

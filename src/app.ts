@@ -10,7 +10,7 @@ import "./config/passport";
 import passport from "passport";
 import { ReviewRouter } from "./modules/review/review.router";
 import { PropertyRouter } from "./modules/property/property.router";
-import session from "express-session";
+
 
 export class App {
   app: Express;

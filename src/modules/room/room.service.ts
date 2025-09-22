@@ -998,27 +998,29 @@ export class RoomService {
       );
     }
 
-    const seasonalRate = await this.prisma.seasonalRate.create({
-      data: {
-        roomId,
-        startDate,
-        endDate,
-        adjustmentValue,
-        adjustmentType: body.adjustmentType,
-        reason: body.reason,
-      },
-      include: {
-        room: {
-          select: {
-            id: true,
-            name: true,
-            property: {
-              select: { id: true, title: true },
-            },
+   const seasonalRate = await this.prisma.seasonalRate.create({
+    data: {
+      roomId,
+      startDate,
+      endDate,
+      adjustmentValue,
+      adjustmentType: body.adjustmentType,
+      reason: body.reason,
+      price: adjustmentValue, // Add the calculated price
+      date: new Date(), // Add current date as the creation timestamp
+    },
+    include: {
+      room: {
+        select: {
+          id: true,
+          name: true,
+          property: {
+            select: { id: true, title: true },
           },
         },
       },
-    });
+    },
+  });
 
     return {
       message: "Seasonal rate created successfully",

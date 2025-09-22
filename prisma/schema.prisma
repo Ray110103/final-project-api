@@ -38,18 +38,15 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Transaction          Transaction[]
-  properties           Property[]
+  Transaction        Transaction[]
+  properties         Property[]
   Review             Review[]
   propertyCategories PropertyCategory[] // ✅ Relation to categories created by this tenant
 
-  tenantReplies Reply[]       @relation("UserTenantReplies")
+  tenantReplies Reply[] @relation("UserTenantReplies")
 
   @@map("users")
-
 }
-
-
 
 enum Role {
   TENANT
@@ -193,6 +190,8 @@ model RoomNonAvailability {
 
 model SeasonalRate {
   id              Int            @id @default(autoincrement())
+  price           Int
+  date            DateTime
   roomId          Int
   room            Room           @relation(fields: [roomId], references: [id])
   startDate       DateTime // Tanggal mulai periode
