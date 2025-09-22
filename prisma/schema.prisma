@@ -65,7 +65,7 @@ model Property {
   address     String?
   latitude    String
   longtitude  String
-
+  
   categoryId Int?
   category   PropertyCategory? @relation(fields: [categoryId], references: [id])
 
@@ -135,9 +135,10 @@ model Room {
   id       Int    @id @default(autoincrement())
   name     String
   stock    Int
+    price       Decimal
   capacity Int // Kapasitas tamu per room
 
-  price       Decimal
+
   description String
   propertyId  Int
   property    Property @relation(fields: [propertyId], references: [id])
@@ -152,6 +153,9 @@ model Room {
 
   @@map("rooms")
 }
+
+
+
 
 model RoomFacility {
   id        Int      @id @default(autoincrement())
