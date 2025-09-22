@@ -42,6 +42,21 @@ async function main() {
     }),
   ]);
 
+  // Create or find category for the property
+  let category = await prisma.propertyCategory.findFirst({
+    where: { name: "Kost", tenantId: tenantUser.id },
+  });
+
+  if (!category) {
+    category = await prisma.propertyCategory.create({
+      data: {
+        name: "Kost",
+        slug: "kost",
+        tenantId: tenantUser.id,
+      },
+    });
+  }
+
   // Create or find property for the tenant
   let property = await prisma.property.findFirst({
     where: { title: "Kost Mentari - Test Property", tenantId: tenantUser.id },
@@ -59,7 +74,7 @@ async function main() {
         address: "Jl. Mentari No. 123",
         latitude: "-6.200000",
         longtitude: "106.816666",
-        category: "Kost",
+        categoryId: category.id, // Connect to the category
         tenantId: tenantUser.id,
       },
     });
@@ -75,6 +90,7 @@ async function main() {
         name: "Kamar A - Test",
         stock: 10,
         price: new Prisma.Decimal(200000),
+        capacity: 1, // Added required capacity field
         description: "Kamar nyaman untuk 1 orang.",
         propertyId: property.id,
       },
@@ -90,6 +106,7 @@ async function main() {
         name: "Kamar B - Test",
         stock: 5,
         price: new Prisma.Decimal(250000),
+        capacity: 2, // Added required capacity field
         description: "Kamar lebih luas untuk 2 orang.",
         propertyId: property.id,
       },
