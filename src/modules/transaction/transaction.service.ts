@@ -12,29 +12,39 @@ import {
   TransactionStatus,
 } from "./dto/get-transaction.dto";
 import { ConfirmPaymentDTO } from "./dto/confirm-payment.dto";
-import { PaymentGatewayWebhookDTO, GatewayPaymentStatus } from "./dto/payment-gateway-webhook.dto";
+import { MidtransWebhookDTO } from "./dto/midtrans-webhook.dto";
 import { uploadPaymentProofDTO } from "./dto/upload-payment-proof.dto";
 import { TransactionQueue } from "./transaction.queue";
+import { MidtransService } from "./midtrans.service";
+import { GetSnapTokenDTO } from "./dto/get-snap-token.dto";
 
 export class TransactionService {
   private prisma: PrismaService;
   private transactionQueue: TransactionQueue;
   private mailService: MailService;
   private cloudinaryService: CloudinaryService;
+  private midtransService: MidtransService;
   
   constructor() {
     this.prisma = new PrismaService();
     this.transactionQueue = new TransactionQueue();
     this.mailService = new MailService();
     this.cloudinaryService = new CloudinaryService();
+    this.midtransService = new MidtransService();
   }
 
-  // Payment gateway webhook handler
-  paymentGatewayWebhook = async (data: PaymentGatewayWebhookDTO) => {
-    const { uuid, status } = data;
+  // Payment gateway webhook handler (Midtrans)
+  paymentGatewayWebhook = async (data: MidtransWebhookDTO) => {
+    const { order_id, status_code, gross_amount, signature_key, transaction_status, fraud_status } = data;
+
+    // Verify Midtrans signature
+    const isValid = this.midtransService.verifySignature(order_id, status_code, gross_amount, signature_key);
+    if (!isValid) {
+      throw new ApiError("Invalid signature", 401);
+    }
 
     const transaction = await this.prisma.transaction.findFirst({
-      where: { uuid },
+      where: { uuid: order_id },
       include: {
         user: true,
         room: { include: { property: true } },
@@ -49,7 +59,11 @@ export class TransactionService {
       throw new ApiError("Invalid payment method for webhook", 400);
     }
 
-    if (status === GatewayPaymentStatus.PAID) {
+    // Map Midtrans status -> our TransactionStatus
+    if (
+      transaction_status === "settlement" ||
+      (transaction_status === "capture" && fraud_status !== "deny")
+    ) {
       const updated = await this.prisma.transaction.update({
         where: { id: transaction.id },
         data: {
@@ -93,28 +107,82 @@ export class TransactionService {
         new Date(updated.endDate)
       );
 
-      return { message: "Payment confirmed via gateway" };
+      return { message: "Payment confirmed via Midtrans" };
     }
 
-    if (status === GatewayPaymentStatus.FAILED) {
-      // Optionally keep it in WAITING_FOR_PAYMENT or mark as CANCELLED
-      // Here we leave it as is to allow manual retry
-      return { message: "Payment failed via gateway" };
+    if (transaction_status === "expire") {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: { status: "EXPIRED" },
+        });
+
+        await tx.room.update({
+          where: { id: transaction.roomId },
+          data: { stock: { increment: transaction.qty } },
+        });
+      });
+      return { message: "Payment expired via Midtrans" };
     }
 
-    return { message: "Webhook processed" };
+    if (transaction_status === "cancel" || transaction_status === "deny" || transaction_status === "refund") {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.update({
+          where: { id: transaction.id },
+          data: { status: "CANCELLED" },
+        });
+
+        await tx.room.update({
+          where: { id: transaction.roomId },
+          data: { stock: { increment: transaction.qty } },
+        });
+      });
+      return { message: "Payment cancelled/denied via Midtrans" };
+    }
+
+    // pending or challenge -> keep waiting
+    return { message: "Webhook processed (pending/challenge)" };
   };
 
   // Admin methods
 
   getTransactions = async (
-    query: GetTransactionDTO
-    //authUserId: number
+    query: GetTransactionDTO,
+    authUserId: number
   ) => {
-    const { page, take, sortBy, sortOrder, status } = query;
+    const { page, take, sortBy, sortOrder, status, orderNumber, date } = query;
+
+    const normalizeStatus = (s: any): TransactionStatus | undefined => {
+      if (!s) return undefined;
+      const value = String(s).toUpperCase();
+      if (value === "ALL") return undefined;
+      return (Object.values(TransactionStatus) as string[]).includes(value)
+        ? (value as TransactionStatus)
+        : undefined;
+    };
+
+    const normalizedStatus = normalizeStatus(status as any);
+
     const whereClause: Prisma.TransactionWhereInput = {
-      //userId: authUserId,
-      ...(status && { status }),
+      userId: authUserId,
+      ...(normalizedStatus && { status: normalizedStatus }),
+      ...(orderNumber && { uuid: { contains: orderNumber } }),
+      ...(date && {
+        OR: [
+          {
+            startDate: {
+              gte: new Date(date),
+              lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+            },
+          },
+          {
+            endDate: {
+              gte: new Date(date),
+              lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+            },
+          },
+        ],
+      }),
     };
 
     const transactions = await this.prisma.transaction.findMany({
@@ -145,9 +213,17 @@ export class TransactionService {
 
   // User methods
   createTransaction = async (data: CreateTransactionDTO, authUserId: number) => {
-    // Calculate days once
+    // Parse and validate dates, and calculate days once
+    const startDateObj = new Date(data.startDate);
+    const endDateObj = new Date(data.endDate);
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+      throw new ApiError("Invalid date format. Use ISO 8601 (e.g., 2025-09-17 or 2025-09-17T00:00:00Z).", 400);
+    }
+    // Inclusive range for the end date when filtering per-day records
+    const endDateInclusive = new Date(endDateObj);
+    endDateInclusive.setHours(23, 59, 59, 999);
     const days = Math.ceil(
-      (new Date(data.endDate).getTime() - new Date(data.startDate).getTime()) /
+      (endDateObj.getTime() - startDateObj.getTime()) /
         (1000 * 60 * 60 * 24)
     );
 
@@ -158,7 +234,7 @@ export class TransactionService {
         include: {
           roomNonAvailability: {
             where: {
-              date: { gte: data.startDate, lte: data.endDate },
+              date: { gte: startDateObj, lte: endDateInclusive },
             },
           },
         },
@@ -176,7 +252,7 @@ export class TransactionService {
       const seasonalRates = await tx.seasonalRate.findMany({
         where: {
           roomId: data.roomId,
-          date: { gte: data.startDate, lte: data.endDate },
+          date: { gte: startDateObj, lte: endDateInclusive },
         },
       });
       if (seasonalRates.length > 0) {
@@ -194,8 +270,8 @@ export class TransactionService {
           userId: authUserId,
           roomId: data.roomId,
           qty: data.qty,
-          startDate: data.startDate,
-          endDate: data.endDate,
+          startDate: startDateObj,
+          endDate: endDateObj,
           total: totalPrice,
           status: "WAITING_FOR_PAYMENT",
           paymentMethod: data.paymentMethod,
@@ -216,16 +292,154 @@ export class TransactionService {
     // Queue expiration
     await this.transactionQueue.addNewTransactionQueue(transaction.uuid);
 
-    // Payment gateway invoice url
+    // Payment gateway via Midtrans Snap
+    let redirectUrl: string | undefined;
     if (data.paymentMethod === PaymentMethod.PAYMENT_GATEWAY) {
-      const invoiceUrl = `https://payment-gateway.example.com/invoice/${transaction.uuid}`;
+      const snapTx = await this.midtransService.createSnapTransaction({
+        order_id: transaction.uuid,
+        gross_amount: transaction.total,
+        customer_details: {
+          first_name: transaction.username,
+        },
+        item_details: [
+          {
+            id: String(transaction.roomId),
+            price: transaction.total,
+            quantity: 1,
+            name: "Room booking",
+          },
+        ],
+      });
+      redirectUrl = snapTx.redirect_url;
       await this.prisma.transaction.update({
         where: { id: transaction.id },
-        data: { invoice_url: invoiceUrl },
+        data: { invoice_url: redirectUrl },
       });
     }
 
-    return { message: "Transaction created", data: transaction };
+    return { message: "Transaction created", data: { ...transaction, invoice_url: redirectUrl ?? transaction.invoice_url } };
+  };
+
+  // Generate Midtrans Snap token for existing transaction
+  getSnapToken = async (data: GetSnapTokenDTO, authUserId: number) => {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: {
+        uuid: data.uuid,
+        userId: authUserId,
+        status: "WAITING_FOR_PAYMENT",
+        expiredAt: { gt: new Date() },
+        paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    if (!transaction) {
+      throw new ApiError("Transaction not found or not eligible for gateway", 404);
+    }
+
+    const snapTx = await this.midtransService.createSnapTransaction({
+      order_id: transaction.uuid,
+      gross_amount: transaction.total,
+      customer_details: {
+        first_name: transaction.username,
+      },
+      item_details: [
+        {
+          id: String(transaction.roomId),
+          price: transaction.total,
+          quantity: 1,
+          name: "Room booking",
+        },
+      ],
+    });
+
+    return { token: snapTx.token, redirect_url: snapTx.redirect_url };
+  };
+
+  // Fallback: refresh status by querying Midtrans Core API
+  refreshStatus = async (data: GetSnapTokenDTO, authUserId: number) => {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: {
+        uuid: data.uuid,
+        userId: authUserId,
+        paymentMethod: PaymentMethod.PAYMENT_GATEWAY,
+      },
+      include: {
+        user: true,
+        room: { include: { property: true } },
+      },
+    });
+
+    if (!transaction) {
+      throw new ApiError("Transaction not found", 404);
+    }
+
+    const statusResp: any = await this.midtransService.getTransactionStatus(transaction.uuid);
+    const txStatus: string = statusResp.transaction_status;
+    const fraudStatus: string | undefined = statusResp.fraud_status;
+
+    if (
+      txStatus === "settlement" ||
+      (txStatus === "capture" && fraudStatus !== "deny")
+    ) {
+      const updated = await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { status: "PAID", expiredAt: null },
+        include: {
+          user: true,
+          room: { include: { property: true } },
+        },
+      });
+
+      // Send payment confirmation email and schedule jobs (mirror webhook)
+      const context = {
+        userName: updated.user.name,
+        transaction: updated,
+        propertyName: updated.room.property.title,
+        roomName: updated.room.name,
+        startDate: updated.startDate,
+        endDate: updated.endDate,
+        total: updated.total,
+        propertyRules: updated.room.property.description || "No specific rules provided",
+        checkInInstructions: "Please check in at the reception with your ID and booking confirmation.",
+      };
+
+      await this.mailService.sendMail(
+        updated.user.email,
+        "Payment Confirmed - Booking Details",
+        "payment-confirmation",
+        context
+      );
+
+      const reminderDate = new Date(updated.startDate);
+      reminderDate.setDate(reminderDate.getDate() - 1);
+      await this.transactionQueue.addReminderQueue(updated.uuid, reminderDate);
+
+      await this.transactionQueue.addReleaseQueue(updated.uuid, new Date(updated.endDate));
+
+      return { message: "Updated to PAID", data: updated, midtrans: statusResp };
+    }
+
+    if (txStatus === "expire") {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.update({ where: { id: transaction.id }, data: { status: "EXPIRED" } });
+        await tx.room.update({ where: { id: transaction.roomId }, data: { stock: { increment: transaction.qty } } });
+      });
+      return { message: "Updated to EXPIRED", midtrans: statusResp };
+    }
+
+    if (txStatus === "cancel" || txStatus === "deny" || txStatus === "refund") {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.transaction.update({ where: { id: transaction.id }, data: { status: "CANCELLED" } });
+        await tx.room.update({ where: { id: transaction.roomId }, data: { stock: { increment: transaction.qty } } });
+      });
+      return { message: "Updated to CANCELLED", midtrans: statusResp };
+    }
+
+    // pending / challenge: do not change
+    return { message: "No change (pending/challenge)", midtrans: statusResp };
   };
 
   uploadPaymentProof = async (
@@ -362,8 +576,8 @@ export class TransactionService {
     query: GetTransactionDTO,
     authUserId: number
   ) => {
-    const { page, take, sortBy, sortOrder, status } = query;
-    
+    const { page, take, sortBy, sortOrder, status, orderNumber, date } = query;
+
     // First, get properties owned by this tenant
     const tenantProperties = await this.prisma.property.findMany({
       where: { tenantId: authUserId },
@@ -372,13 +586,41 @@ export class TransactionService {
     
     const propertyIds = tenantProperties.map((property) => property.id);
 
+    const normalizeStatus = (s: any): TransactionStatus | undefined => {
+      if (!s) return undefined;
+      const value = String(s).toUpperCase();
+      if (value === "ALL") return undefined;
+      return (Object.values(TransactionStatus) as string[]).includes(value)
+        ? (value as TransactionStatus)
+        : undefined;
+    };
+
+    const normalizedStatus = normalizeStatus(status as any);
+
     const whereClause: Prisma.TransactionWhereInput = {
       room: {
         propertyId: {
           in: propertyIds,
         },
       },
-      ...(status && { status }),
+      ...(normalizedStatus && { status: normalizedStatus }),
+      ...(orderNumber && { uuid: { contains: orderNumber } }),
+      ...(date && {
+        OR: [
+          {
+            startDate: {
+              gte: new Date(date),
+              lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+            },
+          },
+          {
+            endDate: {
+              gte: new Date(date),
+              lte: new Date(new Date(date).setHours(23, 59, 59, 999)),
+            },
+          },
+        ],
+      }),
     };
 
     const transactions = await this.prisma.transaction.findMany({

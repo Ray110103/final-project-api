@@ -8,7 +8,8 @@ import { CancelTransactionDTO } from "./dto/cancel-transaction.dto";
 import { uploadPaymentProofDTO } from "./dto/upload-payment-proof.dto";
 import { CreateTransactionDTO } from "./dto/create-transaction.dto";
 import { ConfirmPaymentDTO } from "./dto/confirm-payment.dto";
-import { PaymentGatewayWebhookDTO } from "./dto/payment-gateway-webhook.dto";
+import { MidtransWebhookDTO } from "./dto/midtrans-webhook.dto";
+import { GetSnapTokenDTO } from "./dto/get-snap-token.dto";
 
 export class TransactionController {
   private transactionService: TransactionService;
@@ -19,11 +20,9 @@ export class TransactionController {
   // Admin
 
     getTransactions = async (req: Request, res: Response) => {
-    //const authUserId = res.locals.user.id;
+    const authUserId = res.locals.user.id;
     const query = plainToInstance(GetTransactionDTO, req.query);
-    const result = await this.transactionService.getTransactions(query,
-      //authUserId
-    );
+    const result = await this.transactionService.getTransactions(query, authUserId);
     res.status(200).send(result);
   };
 
@@ -33,6 +32,20 @@ export class TransactionController {
     const body = plainToInstance(CreateTransactionDTO, req.body);
     const result = await this.transactionService.createTransaction(body, authUserId);
     res.status(201).send(result);
+  };
+
+  getSnapToken = async (req: Request, res: Response) => {
+    const authUserId = res.locals.user.id;
+    const body = plainToInstance(GetSnapTokenDTO, req.body);
+    const result = await this.transactionService.getSnapToken(body, authUserId);
+    res.status(200).send(result);
+  };
+
+  refreshStatus = async (req: Request, res: Response) => {
+    const authUserId = res.locals.user.id;
+    const body = plainToInstance(GetSnapTokenDTO, req.body);
+    const result = await this.transactionService.refreshStatus(body, authUserId);
+    res.status(200).send(result);
   };
   
   uploadPaymentProof = async (req: Request, res: Response) => {
@@ -81,7 +94,7 @@ export class TransactionController {
 
   // Webhook (no auth)
   paymentGatewayWebhook = async (req: Request, res: Response) => {
-    const body = plainToInstance(PaymentGatewayWebhookDTO, req.body);
+    const body = plainToInstance(MidtransWebhookDTO, req.body);
     const result = await this.transactionService.paymentGatewayWebhook(body);
     res.status(200).send(result);
   };
