@@ -51,7 +51,7 @@ export class AuthService {
       { expiresIn: "1h" }
     );
 
-    const verificationLink = `http://localhost:3000/register/verify-email/${token}`;
+    const verificationLink = `${process.env.NEXT_PUBLIC_BASE_WEB_URL!}/register/verify-email/${token}`;
 
     // kirim email dengan tombol verifikasi
     await this.mailService.sendMail(
@@ -141,7 +141,7 @@ export class AuthService {
       { expiresIn: "1h" }
     );
 
-    const verificationLink = `http://localhost:3000/register/verify-email-tenant/${token}`;
+    const verificationLink = `${process.env.NEXT_PUBLIC_BASE_WEB_URL!}/register/verify-email-tenant/${token}`;
 
     // Kirim email verifikasi
     await this.mailService.sendMail(
@@ -179,7 +179,7 @@ export class AuthService {
       { expiresIn: "15m" }
     );
 
-    const resetLink = `http://localhost:3000/reset-password/${token}`;
+    const resetLink = `${process.env.NEXT_PUBLIC_BASE_WEB_URL!}/reset-password/${token}`;
 
     await this.mailService.sendMail(
       body.email,
@@ -285,8 +285,8 @@ export class AuthService {
     // Tentukan verification link berdasarkan role
     const verificationLink =
       user.role === "TENANT"
-        ? `http://localhost:3000/register/verify-email-tenant/${token}`
-        : `http://localhost:3000/register/verify-email/${token}`;
+        ? `${process.env.NEXT_PUBLIC_BASE_WEB_URL!}/register/verify-email-tenant/${token}`
+        : `${process.env.NEXT_PUBLIC_BASE_WEB_URL!}/register/verify-email/${token}`;
 
     // Tentukan subject berdasarkan role
     const emailSubject =

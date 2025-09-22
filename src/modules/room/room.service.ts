@@ -16,10 +16,6 @@ export class RoomService {
     this.cloudinaryService = new CloudinaryService();
   }
 
-  // Existing methods... (getRooms, getRoomsByPropertySlug, markRoomAsUnavailable)
-
-  // Debug version of getRooms method
-  // Fixed getRooms method - add trim() to clean parameters
   getRooms = async (query: GetRoomsDTO) => {
     const {
       take = "10",
@@ -35,12 +31,9 @@ export class RoomService {
     } = query;
 
     const whereClause: any = {};
-    console.log("Initial whereClause:", whereClause);
 
-    // Property filter (by id or slug)
     if (property) {
-      console.log("Applying property filter:", property);
-      const cleanProperty = property.toString().trim(); // TRIM added
+      const cleanProperty = property.toString().trim();
       const isNumeric = !isNaN(Number(cleanProperty));
 
       if (isNumeric) {
@@ -57,27 +50,17 @@ export class RoomService {
 
         whereClause.propertyId = propertyData.id;
       }
-      console.log("After property filter:", whereClause);
     }
 
-    // Name filter
     if (name) {
-      console.log("Applying name filter:", name);
-      const cleanName = name.toString().trim(); // TRIM added
       whereClause.name = {
-        contains: cleanName,
+        contains: name.toString().trim(),
         mode: "insensitive",
       };
-      console.log("After name filter:", whereClause);
     }
 
-    // Destination filter (city or location) - FIXED with trim
     if (destination) {
-      console.log("Applying destination filter:", destination);
-      const cleanDestination = destination.toString().trim(); // TRIM added
-      console.log("Cleaned destination:", cleanDestination);
-
-      // Don't override existing property filter
+      const cleanDestination = destination.toString().trim();
       if (whereClause.property) {
         whereClause.AND = whereClause.AND || [];
         whereClause.AND.push({
@@ -96,26 +79,17 @@ export class RoomService {
           ],
         };
       }
-      console.log(
-        "After destination filter:",
-        JSON.stringify(whereClause, null, 2)
-      );
     }
 
-    // Capacity filter (room capacity >= requested guest capacity)
     if (capacity) {
-      console.log("Applying capacity filter:", capacity);
       whereClause.capacity = {
         gte: Number(capacity),
       };
-      console.log("After capacity filter:", whereClause);
     }
 
-    // Availability filter
     if (checkInDate && checkOutDate) {
-      console.log("Applying availability filter");
-      const cleanCheckIn = checkInDate.toString().trim(); // TRIM added
-      const cleanCheckOut = checkOutDate.toString().trim(); // TRIM added
+      const cleanCheckIn = checkInDate.toString().trim();
+      const cleanCheckOut = checkOutDate.toString().trim();
 
       const checkIn = new Date(cleanCheckIn);
       const checkOut = new Date(cleanCheckOut);
@@ -124,20 +98,16 @@ export class RoomService {
         throw new ApiError("Invalid check-in or check-out date", 400);
       }
 
-      console.log("Filtering availability for dates:", { checkIn, checkOut });
-
       if (!whereClause.AND) {
         whereClause.AND = [];
       }
 
-      // Room must have stock > 0
       whereClause.AND.push({
         stock: {
           gt: 0,
         },
       });
 
-      // Room should NOT have non-availability records that overlap with search dates
       whereClause.AND.push({
         NOT: {
           roomNonAvailability: {
@@ -151,7 +121,6 @@ export class RoomService {
         },
       });
 
-      // Room should NOT have confirmed bookings that overlap with search dates
       whereClause.AND.push({
         NOT: {
           transactions: {
@@ -175,19 +144,9 @@ export class RoomService {
           },
         },
       });
-
-      console.log(
-        "After availability filter:",
-        JSON.stringify(whereClause, null, 2)
-      );
     }
 
-    console.log("=== FINAL WHERE CLAUSE ===");
-    console.log(JSON.stringify(whereClause, null, 2));
-
     const totalRooms = await this.prisma.room.count();
-    console.log("Total rooms in database:", totalRooms);
-
     const rooms = await this.prisma.room.findMany({
       where: whereClause,
       orderBy: { [sortBy]: sortOrder },
@@ -199,7 +158,6 @@ export class RoomService {
             id: true,
             title: true,
             slug: true,
-            thumbnail: true,
             location: true,
             city: true,
             category: true,
@@ -226,18 +184,7 @@ export class RoomService {
       },
     });
 
-    console.log(`Query returned ${rooms.length} rooms`);
-
-    rooms.forEach((room) => {
-      if (room.roomNonAvailability.length > 0) {
-        console.log(`  Non-availability:`, room.roomNonAvailability);
-      }
-    });
-
     const total = await this.prisma.room.count({ where: whereClause });
-    console.log("Total count with filter:", total);
-
-    console.log("=== END DEBUGGING ===");
 
     return {
       data: rooms,
@@ -245,10 +192,8 @@ export class RoomService {
     };
   };
 
-  // Updated method in RoomService
   getRoomsByPropertySlug = async (slug: string) => {
     try {
-      // First verify property exists
       const property = await this.prisma.property.findFirst({
         where: { slug: slug },
         select: { id: true, title: true, slug: true, tenantId: true },
@@ -258,7 +203,6 @@ export class RoomService {
         throw new ApiError("Property not found", 404);
       }
 
-      // Get rooms for this property
       const rooms = await this.prisma.room.findMany({
         where: {
           property: {
@@ -277,7 +221,6 @@ export class RoomService {
         },
       });
 
-      // Always return rooms array (empty or with data)
       return rooms;
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -377,7 +320,6 @@ export class RoomService {
       throw new ApiError("Room stock must be greater than 0", 400);
     }
 
-    // Verify property ownership
     const maybeId = Number(body.property);
     let property;
 
@@ -401,7 +343,6 @@ export class RoomService {
       throw new ApiError("Property not found or you do not have access", 404);
     }
 
-    // Upload images to Cloudinary
     let uploadedImages: { secure_url: string }[] = [];
     if (images && images.length > 0) {
       uploadedImages = await Promise.all(
@@ -409,7 +350,6 @@ export class RoomService {
       );
     }
 
-    // Create room with facilities
     const room = await this.prisma.room.create({
       data: {
         name: body.name,
@@ -449,7 +389,6 @@ export class RoomService {
     userId: number,
     images?: Express.Multer.File[]
   ) => {
-    // Verify room ownership
     const existingRoom = await this.prisma.room.findFirst({
       where: {
         id: roomId,
@@ -466,7 +405,6 @@ export class RoomService {
       throw new ApiError("Room not found or you don't have access", 404);
     }
 
-    // Prepare update data
     const updateData: any = {};
 
     if (body.name) {
@@ -501,7 +439,6 @@ export class RoomService {
       updateData.price = price;
     }
 
-    // Handle property change (optional)
     if (
       body.property &&
       body.property !== existingRoom.property.id.toString()
@@ -535,7 +472,6 @@ export class RoomService {
       updateData.propertyId = newProperty.id;
     }
 
-    // Handle image uploads
     let uploadedImages: { secure_url: string }[] = [];
     if (images && images.length > 0) {
       uploadedImages = await Promise.all(
@@ -543,15 +479,12 @@ export class RoomService {
       );
     }
 
-    // Handle facilities update
     if (body.facilities) {
-      // Delete existing facilities first
       await this.prisma.roomFacility.deleteMany({
         where: { roomId: roomId },
       });
     }
 
-    // Update room
     const updatedRoom = await this.prisma.room.update({
       where: { id: roomId },
       data: {
@@ -586,7 +519,6 @@ export class RoomService {
   };
 
   deleteRoom = async (roomId: number, userId: number) => {
-    // Verify room ownership
     const room = await this.prisma.room.findFirst({
       where: {
         id: roomId,
@@ -617,7 +549,6 @@ export class RoomService {
       throw new ApiError("Room not found or you don't have access", 404);
     }
 
-    // Check for active bookings
     if (room._count.transactions > 0) {
       throw new ApiError(
         "Cannot delete room with active or pending bookings. Please wait for all bookings to complete or cancel them first.",
@@ -625,7 +556,6 @@ export class RoomService {
       );
     }
 
-    // Check for future bookings
     const futureBookings = await this.prisma.transaction.count({
       where: {
         roomId: roomId,
@@ -641,7 +571,6 @@ export class RoomService {
       );
     }
 
-    // Delete related data first (cascade delete might not be set up)
     await Promise.all([
       this.prisma.roomFacility.deleteMany({ where: { roomId } }),
       this.prisma.roomImage.deleteMany({ where: { roomId } }),
@@ -649,7 +578,6 @@ export class RoomService {
       this.prisma.seasonalRate.deleteMany({ where: { roomId } }),
     ]);
 
-    // Delete the room
     await this.prisma.room.delete({
       where: { id: roomId },
     });
@@ -662,7 +590,6 @@ export class RoomService {
   getRoomById = async (roomId: number, userId?: number) => {
     const whereClause: any = { id: roomId };
 
-    // If userId provided, ensure ownership
     if (userId) {
       whereClause.property = {
         tenantId: userId,
@@ -718,7 +645,6 @@ export class RoomService {
     } = query;
 
     const whereClause: any = {
-      // SECURITY: Always filter by tenant ownership
       property: {
         tenantId: userId,
       },
@@ -726,24 +652,21 @@ export class RoomService {
 
     console.log("Base security filter applied:", whereClause);
 
-    // Property filter (by id or slug) - within tenant's properties only
     if (property) {
       console.log("Applying property filter:", property);
       const cleanProperty = property.toString().trim();
       const isNumeric = !isNaN(Number(cleanProperty));
 
       if (isNumeric) {
-        // Update the existing property filter to include both tenantId and propertyId
         whereClause.AND = [
           { property: { tenantId: userId } },
           { propertyId: Number(cleanProperty) },
         ];
       } else {
-        // Find property by slug within tenant's properties
         const propertyData = await this.prisma.property.findFirst({
           where: {
             slug: cleanProperty,
-            tenantId: userId, // SECURITY: Only search within tenant's properties
+            tenantId: userId,
           },
           select: { id: true },
         });
@@ -766,7 +689,6 @@ export class RoomService {
       );
     }
 
-    // Name filter
     if (name) {
       console.log("Applying name filter:", name);
       const cleanName = name.toString().trim();
@@ -784,7 +706,6 @@ export class RoomService {
       console.log("After name filter:", JSON.stringify(whereClause, null, 2));
     }
 
-    // Capacity filter
     if (capacity) {
       console.log("Applying capacity filter:", capacity);
 
@@ -803,7 +724,6 @@ export class RoomService {
       );
     }
 
-    // Availability filter
     if (checkInDate && checkOutDate) {
       console.log("Applying availability filter");
       const cleanCheckIn = checkInDate.toString().trim();
@@ -822,14 +742,12 @@ export class RoomService {
         whereClause.AND = [];
       }
 
-      // Room must have stock > 0
       whereClause.AND.push({
         stock: {
           gt: 0,
         },
       });
 
-      // Room should NOT have non-availability records that overlap
       whereClause.AND.push({
         NOT: {
           roomNonAvailability: {
@@ -843,7 +761,6 @@ export class RoomService {
         },
       });
 
-      // Room should NOT have confirmed bookings that overlap
       whereClause.AND.push({
         NOT: {
           transactions: {
@@ -917,7 +834,6 @@ export class RoomService {
 
     console.log(`Query returned ${rooms.length} tenant rooms`);
 
-    // Verify all rooms belong to the tenant (additional security check)
     const invalidRooms = rooms.filter(
       (room) => room.property.tenantId !== userId
     );
@@ -944,7 +860,6 @@ export class RoomService {
     const roomId = parseInt(body.roomId, 10);
     const adjustmentValue = parseFloat(body.adjustmentValue);
 
-    // Verify room ownership
     const room = await this.prisma.room.findFirst({
       where: {
         id: roomId,
@@ -963,7 +878,6 @@ export class RoomService {
       throw new ApiError("End date must be after start date", 400);
     }
 
-    // Check for overlapping seasonal rates
     const overlapping = await this.prisma.seasonalRate.findFirst({
       where: {
         roomId,
@@ -998,29 +912,39 @@ export class RoomService {
       );
     }
 
-   const seasonalRate = await this.prisma.seasonalRate.create({
-    data: {
-      roomId,
-      startDate,
-      endDate,
-      adjustmentValue,
-      adjustmentType: body.adjustmentType,
-      reason: body.reason,
-      price: adjustmentValue, // Add the calculated price
-      date: new Date(), // Add current date as the creation timestamp
-    },
-    include: {
-      room: {
-        select: {
-          id: true,
-          name: true,
-          property: {
-            select: { id: true, title: true },
+    // Calculate the adjusted price based on the room's base price
+    let adjustedPrice = 0;
+    if (body.adjustmentType === "PERCENTAGE") {
+      adjustedPrice = Math.round(
+        Number(room.price) * (1 + adjustmentValue / 100)
+      );
+    } else {
+      adjustedPrice = Math.round(Number(room.price) + adjustmentValue);
+    }
+
+    const seasonalRate = await this.prisma.seasonalRate.create({
+      data: {
+        roomId,
+        startDate,
+        endDate,
+        adjustmentValue,
+        adjustmentType: body.adjustmentType,
+        reason: body.reason,
+        price: adjustedPrice, // Add the calculated price as required by the schema
+        date: new Date(), // Add the current date as required by the schema
+      },
+      include: {
+        room: {
+          select: {
+            id: true,
+            name: true,
+            property: {
+              select: { id: true, title: true },
+            },
           },
         },
       },
-    },
-  });
+    });
 
     return {
       message: "Seasonal rate created successfully",
@@ -1172,7 +1096,6 @@ export class RoomService {
     };
   };
 
-  // Helper function untuk menghitung harga dengan seasonal rate
   calculatePriceWithSeasonalRate = async (
     roomId: number,
     checkInDate: Date,
@@ -1205,7 +1128,6 @@ export class RoomService {
       const nextDay = new Date(currentDate);
       nextDay.setDate(nextDay.getDate() + 1);
 
-      // Check if current date has seasonal rate
       const applicableRate = seasonalRates.find(
         (rate) => currentDate >= rate.startDate && currentDate < rate.endDate
       );

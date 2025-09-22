@@ -14,7 +14,6 @@ import { TransactionRouter } from "./modules/transaction/transaction.router";
 import { ReviewRouter } from "./modules/review/review.router";
 import { ReportRouter } from "./modules/report/report.router";
 
-
 export class App {
   app: Express;
 
@@ -41,18 +40,13 @@ export class App {
     const reviewRouter = new ReviewRouter();
     const reportRouter = new ReportRouter();
 
-    
-
     this.app.use("/samples", sampleRouter.getRouter);
     this.app.use("/auth", authRouter.getRouter());
     this.app.use("/profile", profileRouter.getRouter());
     this.app.use("/rooms", roomRouter.getRouter());
     this.app.use("/property", propertyRouter.getRouter());
     this.app.use("/reviews", reviewRouter.getRouter());
-    
-
-        this.app.use("/transactions", transactionRouter.getRouter());
-
+    this.app.use("/transactions", transactionRouter.getRouter());
     this.app.use("/reports", reportRouter.getRouter());
 
     // Health check

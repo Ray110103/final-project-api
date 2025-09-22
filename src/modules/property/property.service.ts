@@ -16,7 +16,6 @@ export class PropertyService {
     this.cloudinaryService = new CloudinaryService();
   }
 
-  // Fixed version with proper TypeScript types
   getProperties = async (query: GetPropertiesDTO) => {
     const {
       take,
@@ -33,10 +32,6 @@ export class PropertyService {
       destination,
     } = query;
 
-    console.log("=== PROPERTY SEARCH DEBUG ===");
-    console.log("Query received:", query);
-
-    // Date validation
     if (checkInDate && checkOutDate) {
       const checkIn = new Date(checkInDate);
       const checkOut = new Date(checkOutDate);
@@ -52,10 +47,8 @@ export class PropertyService {
       }
     }
 
-    // Convert capacity dari string ke number jika ada
     const capacityNumber = capacity ? parseInt(capacity) : undefined;
 
-    // Gunakan destination sebagai fallback untuk location
     const searchLocation = destination || location;
 
     console.log("Processed parameters:", {
@@ -81,11 +74,9 @@ export class PropertyService {
       }),
     };
 
-    // FIXED: Proper TypeScript typing for location search
     if (searchLocation) {
       console.log("Adding location search for:", searchLocation);
 
-      // Split by comma and get all possible search terms
       const terms = searchLocation
         .toLowerCase()
         .split(",")
@@ -94,10 +85,8 @@ export class PropertyService {
 
       console.log("Search terms:", terms);
 
-      // Create properly typed OR conditions
       const locationOrConditions: Prisma.PropertyWhereInput[] = [];
 
-      // Add condition for each individual term
       terms.forEach((term) => {
         locationOrConditions.push({
           location: { contains: term, mode: "insensitive" as Prisma.QueryMode },
@@ -107,7 +96,6 @@ export class PropertyService {
         });
       });
 
-      // Also check the full string
       locationOrConditions.push({
         location: {
           contains: searchLocation,
@@ -129,8 +117,6 @@ export class PropertyService {
       JSON.stringify(whereClause, null, 2)
     );
 
-    // Room filtering - only add if we have dates or capacity
-    // Room filtering - simplified logic
     if (checkInDate && checkOutDate) {
       const checkIn = new Date(checkInDate);
       const checkOut = new Date(checkOutDate);
@@ -142,15 +128,12 @@ export class PropertyService {
 
       whereClause.rooms = {
         some: {
-          // 1. Room must have sufficient capacity
           capacity: { gte: capacityNumber || 1 },
 
-          // 2. Room must NOT have conflicting bookings
           NOT: {
             transactions: {
               some: {
                 status: { in: ["PAID", "WAITING_FOR_CONFIRMATION"] },
-                // Simple overlap check: booking period overlaps with requested period
                 startDate: { lt: checkOut },
                 endDate: { gt: checkIn },
               },
@@ -159,7 +142,6 @@ export class PropertyService {
         },
       };
     } else if (capacityNumber) {
-      // If only capacity filter (no dates)
       console.log("Adding capacity filter only:", capacityNumber);
       whereClause.rooms = {
         some: {
@@ -278,14 +260,13 @@ export class PropertyService {
             name: true,
             price: true,
             stock: true,
-            capacity: true, // Tambahkan capacity
+            capacity: true,
             description: true,
             createdAt: true,
             images: {
               select: { id: true, url: true },
             },
             facilities: {
-              // Tambahkan room facilities
               select: { id: true, title: true },
             },
           },
@@ -334,7 +315,6 @@ export class PropertyService {
       destination,
     } = query;
 
-    // Convert capacity dan logic yang sama seperti getProperties
     const capacityNumber = capacity ? parseInt(capacity) : undefined;
     const searchLocation = destination || location;
 
@@ -359,9 +339,6 @@ export class PropertyService {
         city: { contains: city, mode: "insensitive" },
       }),
     };
-
-    // Logic availability checking yang sama seperti getProperties
-    // ... (copy logic dari getProperties untuk checkInDate/checkOutDate)
 
     const properties = await this.prisma.property.findMany({
       where: whereClause,
