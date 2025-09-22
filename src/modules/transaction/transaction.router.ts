@@ -10,7 +10,8 @@ import { get } from "http";
 import { GetTransactionDTO } from "./dto/get-transaction.dto";
 import { CancelTransactionDTO } from "./dto/cancel-transaction.dto";
 import { ConfirmPaymentDTO } from "./dto/confirm-payment.dto";
-import { PaymentGatewayWebhookDTO } from "./dto/payment-gateway-webhook.dto";
+import { MidtransWebhookDTO } from "./dto/midtrans-webhook.dto";
+import { GetSnapTokenDTO } from "./dto/get-snap-token.dto";
 
 export class TransactionRouter {
   private router: Router;
@@ -28,9 +29,9 @@ export class TransactionRouter {
   private intializeRoutes = () => {
     this.router.get(
       "/",
-      //this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
-      //this.jwtMiddleware.verifyRole(["TENANT"]), // Requires valid JWT token
-      this.transactionController.getTransactions
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["TENANT"]),
+      this.transactionController.getTransactionsByTenant
     );
    
     // Create new transaction
@@ -39,6 +40,24 @@ export class TransactionRouter {
       this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
       validateBody(CreateTransactionDTO),
       this.transactionController.createTransaction
+    );
+
+    // Get Snap Token
+    this.router.post(
+      "/snap-token",
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["USER"]),
+      validateBody(GetSnapTokenDTO),
+      this.transactionController.getSnapToken
+    );
+
+    // Refresh status from Midtrans (fallback)
+    this.router.post(
+      "/status/refresh",
+      this.jwtMiddleware.verifyToken(process.env.JWT_SECRET!),
+      this.jwtMiddleware.verifyRole(["USER"]),
+      validateBody(GetSnapTokenDTO),
+      this.transactionController.refreshStatus
     );
 
     // Upload payment proof
@@ -121,7 +140,7 @@ export class TransactionRouter {
     // Payment gateway webhook (public, no auth)
     this.router.post(
       "/gateway/webhook",
-      validateBody(PaymentGatewayWebhookDTO),
+      validateBody(MidtransWebhookDTO),
       this.transactionController.paymentGatewayWebhook
     );
   };
