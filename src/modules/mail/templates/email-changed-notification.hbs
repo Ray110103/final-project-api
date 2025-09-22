@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Address Changed - PropertyRent</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .header .subtitle {
+            margin: 8px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .change-summary {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .change-summary h3 {
+            margin: 0 0 15px 0;
+            color: #c2410c;
+            font-size: 16px;
+        }
+        .email-change {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .email-item {
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .old-email {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .new-email {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        .security-notice {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #92400e;
+        }
+        .contact-btn {
+            display: inline-block;
+            background: #dc2626;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .footer {
+            background: #f7fafc;
+            text-align: center;
+            padding: 30px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #718096;
+        }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .content { padding: 30px 20px; }
+            .header { padding: 30px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PropertyRent</h1>
+            <p class="subtitle">Email Address Changed</p>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">Hello {{userName}},</div>
+            
+            <div class="message">
+                <p>This is to inform you that the email address associated with your PropertyRent account has been successfully changed.</p>
+            </div>
+            
+            <div class="change-summary">
+                <h3>Email Change Summary:</h3>
+                <div class="email-change">
+                    <div class="email-item old-email">
+                        <strong>Previous Email:</strong> This email address
+                    </div>
+                    <div class="email-item new-email">
+                        <strong>New Email:</strong> {{newEmail}}
+                    </div>
+                </div>
+                <p style="margin: 15px 0 0 0; font-size: 14px; color: #6b7280;">
+                    <strong>Changed on:</strong> {{formatDate}}
+                </p>
+            </div>
+            
+            <div class="security-notice">
+                <strong>🔐 Security Alert:</strong> If you did not authorize this email change, your account may have been compromised. Please contact our support team immediately using the button below.
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="mailto:support@propertyrent.com" class="contact-btn">
+                    Contact Support Immediately
+                </a>
+            </div>
+            
+            <div class="message">
+                <p><strong>What this means:</strong></p>
+                <ul>
+                    <li>All future communications will be sent to your new email address</li>
+                    <li>You'll need to use your new email address to log in</li>
+                    <li>This old email address is no longer associated with your account</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Need help? Contact our support team at support@propertyrent.com</p>
+            <p>&copy; {{currentYear}} PropertyRent. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

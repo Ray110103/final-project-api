@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString, IsNumberString, IsDateString } from "class-validator";
 
 export class GetRoomsDTO {
   @IsOptional()
@@ -18,10 +18,27 @@ export class GetRoomsDTO {
   sortOrder?: string;
 
   @IsOptional()
-  @IsString()
+  @IsNumberString()
   page: string = "1";
 
   @IsOptional()
-  @IsString()
+  @IsNumberString()
   take: string = "10";
+
+  // New search fields
+  @IsOptional()
+  @IsString()
+  destination?: string;
+
+  @IsOptional()
+  @IsDateString()
+  checkInDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  checkOutDate?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  capacity?: string;
 }
