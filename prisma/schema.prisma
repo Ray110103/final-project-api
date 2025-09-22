@@ -26,16 +26,30 @@ model User {
   pictureProfile String?
   isVerified     Boolean @default(false)
 
+  // Tambahkan field untuk OAuth
+  provider   String? // 'GOOGLE', 'GITHUB', 'LOCAL'
+  providerId String? // ID dari OAuth provider
+  avatar     String? // Avatar URL dari OAuth provider
+
+  pendingEmail           String? // email baru yang menunggu verifikasi
+  emailVerificationToken String? // token untuk verifikasi email baru
+  emailTokenExpiry       DateTime? // waktu expire token
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Transaction   Transaction[]
-  properties    Property[]
-  Review        Review[]
+  Transaction          Transaction[]
+  properties           Property[]
+  Review             Review[]
+  propertyCategories PropertyCategory[] // ✅ Relation to categories created by this tenant
+
   tenantReplies Reply[]       @relation("UserTenantReplies")
 
   @@map("users")
+
 }
+
+
 
 enum Role {
   TENANT
@@ -44,8 +58,8 @@ enum Role {
 
 model Property {
   id          Int     @id @default(autoincrement())
-  title       String
-  slug        String
+  title       String  @unique
+  slug        String  @unique
   status      Status  @default(ACTIVE)
   description String
   location    String
@@ -54,7 +68,9 @@ model Property {
   address     String?
   latitude    String
   longtitude  String
-  category    String
+
+  categoryId Int?
+  category   PropertyCategory? @relation(fields: [categoryId], references: [id])
 
   tenantId Int
   tenant   User @relation(fields: [tenantId], references: [id])
@@ -68,6 +84,25 @@ model Property {
   Review     Review[]
 
   @@map("properties")
+}
+
+model PropertyCategory {
+  id       Int     @id @default(autoincrement())
+  name     String
+  slug     String  @unique
+  isActive Boolean @default(true)
+
+  tenantId Int
+  tenant   User @relation(fields: [tenantId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  // Relation to properties using this category
+  properties Property[]
+
+  @@map("property_categories")
 }
 
 enum Status {
@@ -90,7 +125,6 @@ model PropertyImage {
 model PropertyFacility {
   id         Int      @id @default(autoincrement())
   title      String
-  icon       String?
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 
@@ -101,11 +135,13 @@ model PropertyFacility {
 }
 
 model Room {
-  id          Int      @id @default(autoincrement())
-  name        String
-  stock       Int
+  id       Int    @id @default(autoincrement())
+  name     String
+  stock    Int
+  capacity Int // Kapasitas tamu per room
+
   price       Decimal
-  description String // ✅ tambahin kalau memang butuh
+  description String
   propertyId  Int
   property    Property @relation(fields: [propertyId], references: [id])
 
@@ -114,9 +150,21 @@ model Room {
   transactions        Transaction[]
   seasonalRates       SeasonalRate[]
   roomNonAvailability RoomNonAvailability[]
-  roomImages          RoomImage[]
+  images              RoomImage[]
+  facilities          RoomFacility[]
 
   @@map("rooms")
+}
+
+model RoomFacility {
+  id        Int      @id @default(autoincrement())
+  title     String
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("room_facilities")
 }
 
 model RoomImage {
@@ -144,16 +192,25 @@ model RoomNonAvailability {
 }
 
 model SeasonalRate {
-  id     Int      @id @default(autoincrement())
-  price  Int
-  date   DateTime
-  roomId Int
-  room   Room     @relation(fields: [roomId], references: [id])
+  id              Int            @id @default(autoincrement())
+  roomId          Int
+  room            Room           @relation(fields: [roomId], references: [id])
+  startDate       DateTime // Tanggal mulai periode
+  endDate         DateTime // Tanggal akhir periode
+  adjustmentValue Decimal // Nilai kenaikan
+  adjustmentType  AdjustmentType // PERCENTAGE atau NOMINAL
+  reason          String? // Alasan kenaikan harga
+  isActive        Boolean        @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("seasonal_rates")
+}
+
+enum AdjustmentType {
+  PERCENTAGE
+  NOMINAL
 }
 
 model Transaction {

@@ -1,4 +1,6 @@
-import { IsNotEmpty, IsNumberString, IsString } from "class-validator";
+import { Type } from "class-transformer";
+import { IsNotEmpty, IsNumberString, IsOptional, IsString, ValidateNested } from "class-validator";
+import { RoomFacilityDTO } from "./room-facility.dto";
 
 export class CreateRoomsDTO {
   @IsString()
@@ -15,9 +17,19 @@ export class CreateRoomsDTO {
 
   @IsNumberString()
   @IsNotEmpty()
-  limit!: string;
+  limit!: string; // Stock availability
+
+  @IsNumberString()
+  @IsNotEmpty()
+  capacity!: string; // 👈 TAMBAH: Kapasitas tamu per room
 
   @IsString()
   @IsNotEmpty()
   description!: string;
+
+  // Room facilities
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => RoomFacilityDTO)
+  facilities?: RoomFacilityDTO[]; // 👈 TAMBAH: Room facilities
 }

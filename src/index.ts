@@ -1,3 +1,4 @@
+import "reflect-metadata"; // 👈 WAJIB PALING ATAS
 import { App } from "./app";
 import { initializedWorkers } from "./workers/index";
 import { CronService } from "./scripts/reminder";

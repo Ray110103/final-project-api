@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString } from "class-validator";
 
-export class FacilityDTO {
+export class RoomFacilityDTO {
   @IsNotEmpty()
   @IsString()
   title!: string;

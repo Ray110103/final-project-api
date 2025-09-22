@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email - PropertyRent</title>
+    <title>Verify Your New Email - PropertyRent</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -67,6 +67,17 @@
         .verify-btn:hover {
             transform: translateY(-2px);
         }
+        .email-highlight {
+            background: #e6f3ff;
+            border: 1px solid #bde4ff;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            font-size: 16px;
+            color: #2563eb;
+            text-align: center;
+            font-weight: 600;
+        }
         .expiry-notice {
             background: #fef7e6;
             border: 1px solid #f6d55c;
@@ -85,13 +96,13 @@
             color: #718096;
         }
         .security-notice {
-            background: #e6f3ff;
-            border: 1px solid #bde4ff;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
             border-radius: 8px;
             padding: 16px;
             margin: 20px 0;
             font-size: 14px;
-            color: #2563eb;
+            color: #856404;
         }
         @media (max-width: 600px) {
             body { padding: 10px; }
@@ -104,20 +115,24 @@
     <div class="container">
         <div class="header">
             <h1>PropertyRent</h1>
-            <p class="subtitle">Verify Your Email Address</p>
+            <p class="subtitle">Verify Your New Email Address</p>
         </div>
         
         <div class="content">
             <div class="greeting">Hello {{userName}},</div>
             
             <div class="message">
-                <p>Thank you for registering at PropertyRent! We're excited to have you join our community.</p>
-                <p>To complete your registration and secure your account, please verify your email address by clicking the button below:</p>
+                <p>We received a request to change your email address on PropertyRent.</p>
+                <p>Please verify your new email address to complete the change:</p>
+            </div>
+            
+            <div class="email-highlight">
+                New Email: {{newEmail}}
             </div>
             
             <div style="text-align: center;">
                 <a href="{{verificationLink}}" class="verify-btn">
-                    Verify Email Address
+                    Verify New Email Address
                 </a>
             </div>
             
@@ -126,7 +141,7 @@
             </div>
             
             <div class="security-notice">
-                <strong>🔐 Security Note:</strong> If you didn't create an account with PropertyRent, please ignore this email. Your email address will not be used without verification.
+                <strong>🔐 Security Notice:</strong> If you didn't request this email change, please ignore this email and contact our support team immediately. Your current email address will remain unchanged.
             </div>
             
             <div class="message">

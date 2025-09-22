@@ -1,15 +1,15 @@
 import { Type } from "class-transformer";
-import { IsNotEmpty, IsOptional, IsString, ValidateNested, IsInt, Min } from "class-validator";
+import { IsOptional, IsString, ValidateNested, IsInt, Min } from "class-validator";
 import { FacilityDTO } from "./facility.dto";
 
-export class CreatePropertyDTO {
-  @IsNotEmpty()
+export class UpdatePropertyDTO {
+  @IsOptional()
   @IsString()
-  title!: string;
+  title?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  description!: string;
+  description?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -17,25 +17,25 @@ export class CreatePropertyDTO {
   @Min(1)
   categoryId?: number; // Changed from category string to categoryId number
   
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  location!: string;
+  location?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  city!: string;
+  city?: string;
 
   @IsOptional()
   @IsString()
   address?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  latitude!: string;
+  latitude?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  longtitude!: string; // keep schema spelling
+  longtitude?: string; // keep schema spelling
 
   // ✅ fasilitas bisa array
   @IsOptional()
